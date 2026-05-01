@@ -10,6 +10,7 @@ import { requestLogger } from './middleware/logger';
 import { requestIdMiddleware } from './middleware/requestId';
 import { adminRouter } from './routes/admin';
 import { authRouter } from './routes/auth';
+import { instructorRouter } from './routes/instructor';
 import { studentRouter } from './routes/student';
 import { sendSuccess } from './utils/response';
 
@@ -53,11 +54,11 @@ export function createApp(): Express {
 
   app.use('/api/auth', authRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/instructor', instructorRouter);
   app.use('/api/student', studentRouter);
 
   // Routes will be mounted here by subsequent tickets.
   // app.use('/api/student', studentRouter);
-  // app.use('/api/instructor', instructorRouter);
   // app.use('/api/webhooks', webhookRouter);
 
   app.use((_req, res) => {

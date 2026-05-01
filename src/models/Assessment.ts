@@ -13,6 +13,8 @@ export interface IAssessment extends Document {
   levelId?: Schema.Types.ObjectId;
   assessedBy: Schema.Types.ObjectId;
   assessedAt: Date;
+  sharedWithParent: boolean;
+  sharedAt?: Date;
   overallScore?: number;
   remarks?: string;
   skillScores: ISkillScore[];
@@ -37,6 +39,8 @@ const AssessmentSchema = new Schema<IAssessment>(
     levelId: { type: Schema.Types.ObjectId, ref: 'Level' },
     assessedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     assessedAt: { type: Date, required: true, default: Date.now, index: true },
+    sharedWithParent: { type: Boolean, default: false, index: true },
+    sharedAt: { type: Date },
     overallScore: { type: Number, min: 0, max: 100 },
     remarks: { type: String, trim: true },
     skillScores: { type: [SkillScoreSchema], default: [] }
