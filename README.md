@@ -25,6 +25,22 @@ This setup corresponds to the backend portions of:
 3. Run `pnpm dev`
 4. Continue with Sprint 2 backend auth work
 
+## Local role seed
+
+To create usable local admin and instructor accounts plus one branch/course/batch:
+
+```bash
+pnpm seed:dev
+```
+
+Seeded login phones:
+
+- `super_admin`: `9990000001`
+- `branch_admin`: `9990000002`
+- `instructor`: `9990000003`
+
+When `OTP_PROVIDER=mock`, the OTP is always `123456`.
+
 ## Workspace docs
 
 Use the workspace agent entry document for project-wide workflow:

@@ -13,3 +13,9 @@
 | DOMAIN-02-BE | DOMAIN-02 | Admin: Branches, Courses, Batches API | DONE | Admin CRUD/list routes added for branches, courses, levels, and batches with roster endpoint and audit hooks |
 | DOMAIN-03-BE | DOMAIN-03 | Admin: User Management API | DONE | Admin user routes and policy helper added for role/status updates, branch assignment, and scoped account creation |
 | PARENT-01-BE | PARENT-01 | Children Management API | DONE | Parent child routes added under `/api/student/children` with ownership checks and active-enrollment delete guard |
+| PARENT-02-BE | PARENT-02 | Enrollment Request API | DONE | Parent enrollment submit/list endpoints and parent-safe branch/batch catalog endpoints added under `/api/student` |
+| PARENT-03-BE | PARENT-03 | Admin Enrollment Approval API | DONE | Admin enrollment queue and action routes added with approval, rejection, suspension, and fee-ledger side effect |
+| PARENT-04-BE | PARENT-04 | Parent Dashboard Summary API | DONE | Parent dashboard summary endpoint added under `/api/student/dashboard` |
+| INST-01-BE | INST-01 | Instructor Batches + Roster API | DONE | Instructor batch list and batch roster routes added under `/api/instructor/batches` |
+| INST-02-BE | INST-02 | Attendance Mark + View API | DONE | Instructor attendance mark/list endpoints + parent attendance endpoint implemented with date filtering and idempotent upsert |
+| INST-03-BE | INST-03 | Progress Assessments API | DONE | Instructor assessment create/update/list/share endpoints + parent shared assessments endpoint implemented with batch/ownership enforcement |
