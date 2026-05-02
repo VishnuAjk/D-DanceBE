@@ -5,6 +5,7 @@ import { dashboardRouter } from './dashboard';
 import { catalogRouter } from './catalog';
 import { childrenRouter } from './children';
 import { enrollRouter, enrollmentsRouter } from './enrollments';
+import { feesRouter } from './fees';
 import { attendanceRouter } from './attendance';
 import { assessmentsRouter } from './assessments';
 
@@ -19,3 +20,4 @@ studentRouter.use('/enrollments', enrollmentsRouter);
 studentRouter.use('/enroll', enrollRouter);
 studentRouter.use('/attendance', attendanceRouter);
 studentRouter.use('/assessments', assessmentsRouter);
+studentRouter.use('/fees', feesRouter);
