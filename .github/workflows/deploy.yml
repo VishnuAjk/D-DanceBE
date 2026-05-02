@@ -33,6 +33,14 @@ jobs:
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
+      - name: Install shared dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: D-DanceShared
+
+      - name: Build shared package
+        run: pnpm build
+        working-directory: D-DanceShared
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: app
