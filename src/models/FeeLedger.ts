@@ -6,6 +6,7 @@ export interface IFeeLedger extends Document {
   enrollmentId: Schema.Types.ObjectId;
   childId: Schema.Types.ObjectId;
   branchId: Schema.Types.ObjectId;
+  paymentId?: Schema.Types.ObjectId;
   month: string;
   amount: number;
   discount: number;
@@ -22,6 +23,7 @@ const FeeLedgerSchema = new Schema<IFeeLedger>(
     enrollmentId: { type: Schema.Types.ObjectId, ref: 'Enrollment', required: true, index: true },
     childId: { type: Schema.Types.ObjectId, ref: 'Child', required: true, index: true },
     branchId: { type: Schema.Types.ObjectId, ref: 'Branch', required: true, index: true },
+    paymentId: { type: Schema.Types.ObjectId, ref: 'Payment', index: true },
     month: { type: String, required: true, match: /^\d{4}-(0[1-9]|1[0-2])$/ },
     amount: { type: Number, required: true, min: 0 },
     discount: { type: Number, default: 0, min: 0 },

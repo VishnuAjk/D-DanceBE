@@ -19,3 +19,4 @@
 | INST-02-BE | Attendance Mark + View API | DONE | Instructor attendance mark/list routes added under `/api/instructor/attendance`; parent monthly attendance endpoint added under `/api/student/attendance`; idempotent upsert behavior implemented |
 | INST-03-BE | Progress Assessments API | DONE | Instructor assessment create/update/list/share routes added under `/api/instructor/assessments`; parent shared assessment endpoint added under `/api/student/assessments` |
 | PAY-01-BE | Fee Ledger API | DONE | Admin fee generation/list/waive/discount routes added under `/api/admin/fees`; parent fee list endpoint added under `/api/student/fees`; bulk idempotent generation implemented |
+| PAY-02-BE | Razorpay Payment Initiation API | DONE | `POST /api/student/fees/pay` added with parent ownership and status validation; Razorpay order creation persists payment rows including ledger/month context; BE lint/typecheck passed |

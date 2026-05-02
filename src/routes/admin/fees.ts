@@ -2,7 +2,7 @@ import { ObjectIdString } from '@danceapp/shared';
 import { Router, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
 import { AppError } from '../../middleware/errorHandler';
-import { requireBranchAccess, requireRole } from '../../middleware/rbac';
+import { requireBranchAccess } from '../../middleware/rbac';
 import { logAudit } from '../../models/AuditLog';
 import { Enrollment } from '../../models/Enrollment';
 import { FeeLedger } from '../../models/FeeLedger';

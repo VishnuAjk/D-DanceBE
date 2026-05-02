@@ -42,7 +42,7 @@ async function seedDev() {
     { new: true, upsert: true, setDefaultsOnInsert: true }
   );
 
-  const superAdmin = await User.findOneAndUpdate(
+  await User.findOneAndUpdate(
     { phone: '9990000001' },
     {
       name: 'Super Admin',
@@ -54,7 +54,7 @@ async function seedDev() {
     { new: true, upsert: true, setDefaultsOnInsert: true }
   );
 
-  const branchAdmin = await User.findOneAndUpdate(
+  await User.findOneAndUpdate(
     { phone: '9990000002' },
     {
       name: 'Branch Admin',
