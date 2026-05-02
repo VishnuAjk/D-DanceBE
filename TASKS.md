@@ -19,3 +19,4 @@
 | INST-01-BE | INST-01 | Instructor Batches + Roster API | DONE | Instructor batch list and batch roster routes added under `/api/instructor/batches` |
 | INST-02-BE | INST-02 | Attendance Mark + View API | DONE | Instructor attendance mark/list endpoints + parent attendance endpoint implemented with date filtering and idempotent upsert |
 | INST-03-BE | INST-03 | Progress Assessments API | DONE | Instructor assessment create/update/list/share endpoints + parent shared assessments endpoint implemented with batch/ownership enforcement |
+| PAY-01-BE | PAY-01 | Fee Ledger API | DONE | Admin fee generation/list/waive/discount routes + parent fee listing route implemented with idempotent monthly generation |
