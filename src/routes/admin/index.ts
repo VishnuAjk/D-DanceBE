@@ -7,6 +7,7 @@ import { coursesRouter } from './courses';
 import { enrollmentsRouter } from './enrollments';
 import { feesRouter } from './fees';
 import { levelsRouter } from './levels';
+import { subscriptionsRouter } from './subscriptions';
 import { usersRouter } from './users';
 
 export const adminRouter: ExpressRouter = Router();
@@ -19,3 +20,4 @@ adminRouter.use('/batches', requireRole('super_admin', 'branch_admin'), batchesR
 adminRouter.use('/users', requireRole('super_admin', 'branch_admin'), usersRouter);
 adminRouter.use('/enrollments', requireRole('super_admin', 'branch_admin'), enrollmentsRouter);
 adminRouter.use('/fees', requireRole('super_admin', 'branch_admin'), feesRouter);
+adminRouter.use('/subscriptions', requireRole('super_admin', 'branch_admin'), subscriptionsRouter);

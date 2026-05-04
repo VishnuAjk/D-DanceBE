@@ -1,6 +1,13 @@
 import { Document, Schema, model } from 'mongoose';
 
-type PaymentStatus = 'CREATED' | 'CAPTURED' | 'FAILED' | 'REFUNDED';
+type PaymentStatus =
+  | 'CREATED'
+  | 'CAPTURED'
+  | 'FAILED'
+  | 'REFUNDED'
+  | 'ACTIVE'
+  | 'PAUSED'
+  | 'CANCELLED';
 type PaymentType = 'one_time' | 'subscription';
 
 export interface IPayment extends Document {
@@ -39,7 +46,7 @@ const PaymentSchema = new Schema<IPayment>(
     currency: { type: String, required: true, default: 'INR', uppercase: true, trim: true },
     status: {
       type: String,
-      enum: ['CREATED', 'CAPTURED', 'FAILED', 'REFUNDED'],
+      enum: ['CREATED', 'CAPTURED', 'FAILED', 'REFUNDED', 'ACTIVE', 'PAUSED', 'CANCELLED'],
       default: 'CREATED',
       index: true
     },
