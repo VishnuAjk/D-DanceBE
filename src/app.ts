@@ -12,6 +12,7 @@ import { adminRouter } from './routes/admin';
 import { authRouter } from './routes/auth';
 import { instructorRouter } from './routes/instructor';
 import { studentRouter } from './routes/student';
+import { webhookRouter } from './routes/webhooks';
 import { sendSuccess } from './utils/response';
 
 export function createApp(): Express {
@@ -56,10 +57,7 @@ export function createApp(): Express {
   app.use('/api/admin', adminRouter);
   app.use('/api/instructor', instructorRouter);
   app.use('/api/student', studentRouter);
-
-  // Routes will be mounted here by subsequent tickets.
-  // app.use('/api/student', studentRouter);
-  // app.use('/api/webhooks', webhookRouter);
+  app.use('/api/webhooks', webhookRouter);
 
   app.use((_req, res) => {
     res.status(404).json({

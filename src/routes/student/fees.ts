@@ -5,6 +5,7 @@ import { getRazorpayClient } from '../../adapters/razorpay';
 import { env } from '../../config/env';
 import { AppError } from '../../middleware/errorHandler';
 import { Child } from '../../models/Child';
+import { Enrollment } from '../../models/Enrollment';
 import { FeeLedger } from '../../models/FeeLedger';
 import { logAudit } from '../../models/AuditLog';
 import { Payment } from '../../models/Payment';
@@ -16,6 +17,38 @@ const MonthString = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const InitiatePaymentSchema = z.object({
   ledgerIds: z.array(ObjectIdString).min(1)
 });
+const CreateSubscriptionSchema = z.object({
+  enrollmentId: ObjectIdString,
+  totalCount: z.coerce.number().int().min(1).max(60).optional()
+});
+
+function currentMonthString() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function findOwnedEnrollment(enrollmentId: string, parentId: string) {
+  const children = await Child.find({
+    parentId,
+    isActive: true
+  }).select('_id');
+  const childIds = children.map((child) => child._id);
+
+  const enrollment = await Enrollment.findOne({
+    _id: enrollmentId,
+    childId: { $in: childIds },
+    status: { $in: ['APPROVED', 'ACTIVE'] }
+  })
+    .populate('batchId', 'name monthlyFee schedule')
+    .populate('childId', 'name dob gender photo')
+    .populate('branchId', 'name city');
+
+  if (!enrollment) {
+    throw new AppError(404, 'ENROLLMENT_NOT_FOUND', 'Enrollment not found for this parent');
+  }
+
+  return enrollment;
+}
 
 feesRouter.get('/', async (req, res, next) => {
   try {
@@ -146,6 +179,125 @@ feesRouter.post('/pay', async (req, res, next) => {
       currency: order.currency,
       keyId: env.RAZORPAY_KEY_ID ?? null
     });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+feesRouter.post('/subscribe', async (req, res, next) => {
+  try {
+    if (!env.RAZORPAY_PLAN_ID) {
+      throw new AppError(503, 'SUBSCRIPTION_UNAVAILABLE', 'Recurring subscriptions are not configured right now');
+    }
+
+    const payload = CreateSubscriptionSchema.parse(req.body);
+    const enrollment = await findOwnedEnrollment(payload.enrollmentId, req.user!.userId);
+    const existing = await Payment.findOne({
+      enrollmentId: enrollment._id,
+      type: 'subscription',
+      status: { $in: ['CREATED', 'ACTIVE', 'PAUSED'] }
+    });
+
+    if (existing) {
+      throw new AppError(409, 'SUBSCRIPTION_EXISTS', 'A subscription already exists for this enrollment');
+    }
+
+    const batch = enrollment.batchId as unknown as { monthlyFee: number; name: string };
+    const razorpay = getRazorpayClient();
+    const subscription = await razorpay.subscriptions.create({
+      plan_id: env.RAZORPAY_PLAN_ID,
+      total_count: payload.totalCount ?? 12,
+      quantity: 1,
+      customer_notify: 1,
+      notes: {
+        parentId: req.user!.userId,
+        enrollmentId: String(enrollment._id),
+        childId: String(enrollment.childId),
+        branchId: String(enrollment.branchId)
+      }
+    });
+
+    const currentLedger = await FeeLedger.findOne({
+      enrollmentId: enrollment._id,
+      month: currentMonthString()
+    }).sort({ createdAt: -1 });
+
+    const payment = await Payment.create({
+      parentId: req.user!._id,
+      enrollmentId: enrollment._id,
+      feeLedgerId: currentLedger?._id,
+      feeLedgerIds: currentLedger ? [currentLedger._id] : [],
+      childId: enrollment.childId,
+      branchId: enrollment.branchId,
+      months: currentLedger ? [currentLedger.month] : [],
+      amount: Math.round(Number(batch.monthlyFee ?? 0) * 100),
+      currency: 'INR',
+      status: 'CREATED',
+      type: 'subscription',
+      razorpaySubscriptionId: subscription.id,
+      notes: {
+        subscriptionStatus: subscription.status,
+        shortUrl: subscription.short_url,
+        processedEventKeys: []
+      }
+    });
+
+    await logAudit({
+      actorId: req.user!._id,
+      action: 'SUBSCRIPTION_INITIATED',
+      resourceType: 'payment',
+      resourceId: String(payment._id),
+      branchId: String(enrollment.branchId),
+      payload: {
+        enrollmentId: String(enrollment._id),
+        razorpaySubscriptionId: subscription.id,
+        totalCount: payload.totalCount ?? 12
+      },
+      ip: req.ip,
+      requestId: req.headers['x-request-id'] as string | undefined
+    });
+
+    return sendSuccess(
+      req,
+      res,
+      {
+        subscriptionId: subscription.id,
+        shortUrl: subscription.short_url,
+        status: subscription.status,
+        paymentId: String(payment._id),
+        keyId: env.RAZORPAY_KEY_ID ?? null
+      },
+      201
+    );
+  } catch (err) {
+    return next(err);
+  }
+});
+
+feesRouter.get('/subscriptions', async (req, res, next) => {
+  try {
+    const children = await Child.find({
+      parentId: req.user!.userId,
+      isActive: true
+    }).select('_id');
+    const childIds = children.map((child) => child._id);
+
+    const subscriptions = await Payment.find({
+      type: 'subscription',
+      childId: { $in: childIds }
+    })
+      .populate('childId', 'name dob gender photo')
+      .populate('branchId', 'name city')
+      .populate({
+        path: 'enrollmentId',
+        populate: {
+          path: 'batchId',
+          select: 'name schedule monthlyFee'
+        }
+      })
+      .sort({ createdAt: -1 });
+
+    return sendSuccess(req, res, subscriptions);
   } catch (err) {
     return next(err);
   }
