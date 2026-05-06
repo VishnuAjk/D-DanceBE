@@ -36,6 +36,16 @@ const COOKIE_OPTIONS = {
   path: '/'
 };
 
+const PushSubscriptionSchema = z.object({
+  subscription: z.object({
+    endpoint: z.string().url(),
+    keys: z.object({
+      p256dh: z.string().min(1),
+      auth: z.string().min(1)
+    })
+  })
+});
+
 authRouter.post('/otp-send', otpRateLimit, async (req, res, next) => {
   try {
     const { phone } = z.object({ phone: PhoneNumber }).parse(req.body);
@@ -177,6 +187,34 @@ authRouter.get('/me', authenticate, requireAuth, async (req, res, next) => {
     }
 
     return sendSuccess(req, res, user);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+authRouter.post('/push-subscribe', authenticate, requireAuth, async (req, res, next) => {
+  try {
+    const payload = PushSubscriptionSchema.parse(req.body);
+    const user = await User.findById(req.user!.userId);
+
+    if (!user) {
+      throw new AppError(404, 'NOT_FOUND', 'User not found');
+    }
+
+    const exists = user.webPushSubscriptions.some(
+      (item) => item.endpoint === payload.subscription.endpoint
+    );
+
+    if (!exists) {
+      user.webPushSubscriptions.push({
+        endpoint: payload.subscription.endpoint,
+        keys: payload.subscription.keys,
+        createdAt: new Date()
+      });
+      await user.save();
+    }
+
+    return sendSuccess(req, res, { subscribed: true });
   } catch (err) {
     return next(err);
   }

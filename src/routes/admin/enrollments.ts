@@ -7,6 +7,7 @@ import { logAudit } from '../../models/AuditLog';
 import { Batch } from '../../models/Batch';
 import { Enrollment } from '../../models/Enrollment';
 import { FeeLedger } from '../../models/FeeLedger';
+import { notifyParentEnrollmentApproved, notifyParentEnrollmentRejected } from '../../services/notifications';
 import { sendSuccess } from '../../utils/response';
 
 export const enrollmentsRouter: ExpressRouter = Router();
@@ -125,6 +126,8 @@ enrollmentsRouter.put('/:id/approve', async (req, res, next) => {
           requestId: req.headers['x-request-id'] as string | undefined
         });
 
+        void notifyParentEnrollmentApproved(String(enrollment.childId));
+
         return sendSuccess(req, res, enrollment);
       } catch (err) {
         return next(err);
@@ -159,6 +162,8 @@ enrollmentsRouter.put('/:id/reject', async (req, res, next) => {
           ip: req.ip,
           requestId: req.headers['x-request-id'] as string | undefined
         });
+
+        void notifyParentEnrollmentRejected(String(enrollment.childId));
 
         return sendSuccess(req, res, enrollment);
       } catch (err) {
