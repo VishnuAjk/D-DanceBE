@@ -5,6 +5,7 @@ import { logger } from '../middleware/logger';
 import { logAudit } from '../models/AuditLog';
 import { FeeLedger } from '../models/FeeLedger';
 import { Payment } from '../models/Payment';
+import { notifyParentPaymentConfirmed } from '../services/notifications';
 
 export const webhookRouter: ExpressRouter = Router();
 
@@ -148,6 +149,12 @@ webhookRouter.post('/razorpay', async (req, res) => {
           requestId: req.headers['x-request-id'] as string | undefined
         });
       }
+
+      void notifyParentPaymentConfirmed({
+        parentId: paymentRecord.parentId ? String(paymentRecord.parentId) : undefined,
+        childId: paymentRecord.childId ? String(paymentRecord.childId) : undefined,
+        amount: paymentEntity.amount
+      });
     }
 
     if (event.event === 'payment.failed') {
@@ -216,6 +223,12 @@ webhookRouter.post('/razorpay', async (req, res) => {
         processedEventKeys: alreadyProcessed ? processed : [...processed, eventKey]
       };
       await paymentRecord.save();
+
+      void notifyParentPaymentConfirmed({
+        parentId: paymentRecord.parentId ? String(paymentRecord.parentId) : undefined,
+        childId: paymentRecord.childId ? String(paymentRecord.childId) : undefined,
+        amount: paymentRecord.amount
+      });
     }
 
     if (event.event === 'subscription.charged') {
@@ -252,6 +265,12 @@ webhookRouter.post('/razorpay', async (req, res) => {
         lastSubscriptionChargeId: paymentEntity?.id ?? null
       };
       await paymentRecord.save();
+
+      void notifyParentPaymentConfirmed({
+        parentId: paymentRecord.parentId ? String(paymentRecord.parentId) : undefined,
+        childId: paymentRecord.childId ? String(paymentRecord.childId) : undefined,
+        amount: paymentEntity?.amount ?? paymentRecord.amount
+      });
     }
 
     if (event.event === 'subscription.paused' || event.event === 'subscription.cancelled') {

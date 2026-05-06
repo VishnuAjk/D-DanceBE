@@ -5,6 +5,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { Assessment } from '../../models/Assessment';
 import { Batch } from '../../models/Batch';
 import { Enrollment } from '../../models/Enrollment';
+import { notifyParentAssessmentShared } from '../../services/notifications';
 import { sendSuccess } from '../../utils/response';
 
 export const assessmentsRouter: ExpressRouter = Router();
@@ -175,9 +176,12 @@ assessmentsRouter.put('/:id/share', async (req, res, next) => {
       { new: true, runValidators: true }
     );
 
+    if (updated) {
+      void notifyParentAssessmentShared(String(updated.childId));
+    }
+
     return sendSuccess(req, res, updated);
   } catch (err) {
     return next(err);
   }
 });
-

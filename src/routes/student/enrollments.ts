@@ -6,6 +6,7 @@ import { logAudit } from '../../models/AuditLog';
 import { Batch } from '../../models/Batch';
 import { Child } from '../../models/Child';
 import { Enrollment } from '../../models/Enrollment';
+import { notifyBranchAdminsEnrollmentSubmitted } from '../../services/notifications';
 import { sendSuccess } from '../../utils/response';
 
 export const enrollmentsRouter: ExpressRouter = Router();
@@ -68,6 +69,11 @@ enrollRouter.post('/', async (req, res, next) => {
       ip: req.ip,
       requestId: req.headers['x-request-id'] as string | undefined
     });
+
+    const child = await Child.findById(payload.childId).select('name');
+    if (child) {
+      void notifyBranchAdminsEnrollmentSubmitted(String(batch.branchId), child.name);
+    }
 
     return sendSuccess(req, res, enrollment, 201);
   } catch (err) {
