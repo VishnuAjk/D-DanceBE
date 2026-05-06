@@ -9,6 +9,7 @@ import { feesRouter } from './fees';
 import { levelsRouter } from './levels';
 import { subscriptionsRouter } from './subscriptions';
 import { usersRouter } from './users';
+import { videosRouter } from './videos';
 
 export const adminRouter: ExpressRouter = Router();
 
@@ -21,3 +22,4 @@ adminRouter.use('/users', requireRole('super_admin', 'branch_admin'), usersRoute
 adminRouter.use('/enrollments', requireRole('super_admin', 'branch_admin'), enrollmentsRouter);
 adminRouter.use('/fees', requireRole('super_admin', 'branch_admin'), feesRouter);
 adminRouter.use('/subscriptions', requireRole('super_admin', 'branch_admin'), subscriptionsRouter);
+adminRouter.use('/videos', requireRole('super_admin', 'branch_admin'), videosRouter);
