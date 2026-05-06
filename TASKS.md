@@ -23,3 +23,4 @@
 | PAY-02-BE | PAY-02 | Razorpay Payment Initiation API | DONE | Parent payment initiation route added with owned-ledger validation, Razorpay order creation, audit logging, and persisted payment context for webhook follow-up |
 | PAY-03-BE | PAY-03 | Razorpay Webhooks API | DONE | Webhook route added with signature verification, idempotent payment capture/failure handling, fee-ledger reconciliation, and audit logging |
 | PAY-04-BE | PAY-04 | Razorpay Subscriptions API | DONE | Parent subscription create/list routes and admin cancel route added; subscription activation/charge/pause/cancel webhooks now update local payment lifecycle and recurring fee-ledger state |
+| REPORT-01-BE | REPORT-01 | Video Library API | DONE | Published browse route added under `/api/videos`; admin create/update/delete/list routes added under `/api/admin/videos`; YouTube embed normalization and branch-admin scoping implemented |

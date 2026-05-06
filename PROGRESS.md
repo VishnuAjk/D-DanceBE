@@ -22,3 +22,4 @@
 | PAY-02-BE | Razorpay Payment Initiation API | DONE | `POST /api/student/fees/pay` added with parent ownership and status validation; Razorpay order creation persists payment rows including ledger/month context; BE lint/typecheck passed |
 | PAY-03-BE | Razorpay Webhooks API | DONE | `POST /api/webhooks/razorpay` added with HMAC verification over raw body; captured payments now mark linked fee ledgers paid and failed payments mark local payment status; BE lint/typecheck passed |
 | PAY-04-BE | Razorpay Subscriptions API | DONE | `POST /api/student/fees/subscribe`, `GET /api/student/fees/subscriptions`, and `POST /api/admin/subscriptions/:id/cancel` added; subscription lifecycle webhooks now mark recurring payment state and pay the next due ledger idempotently; BE lint/typecheck passed |
+| REPORT-01-BE | Video Library API | DONE | `GET /api/videos` plus admin video CRUD routes added; YouTube URLs now normalize to embed and thumbnail URLs; BE lint/typecheck passed |

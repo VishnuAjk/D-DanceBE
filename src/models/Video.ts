@@ -5,6 +5,7 @@ export interface IVideo extends Document {
   description?: string;
   videoUrl: string;
   thumbnailUrl?: string;
+  tags: string[];
   courseId?: Schema.Types.ObjectId;
   levelId?: Schema.Types.ObjectId;
   branchIds: Schema.Types.ObjectId[];
@@ -21,6 +22,7 @@ const VideoSchema = new Schema<IVideo>(
     description: { type: String, trim: true },
     videoUrl: { type: String, required: true, trim: true },
     thumbnailUrl: { type: String, trim: true },
+    tags: { type: [{ type: String, trim: true }], default: [] },
     courseId: { type: Schema.Types.ObjectId, ref: 'Course', index: true },
     levelId: { type: Schema.Types.ObjectId, ref: 'Level', index: true },
     branchIds: [{ type: Schema.Types.ObjectId, ref: 'Branch' }],
