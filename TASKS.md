@@ -25,3 +25,4 @@
 | PAY-04-BE | PAY-04 | Razorpay Subscriptions API | DONE | Parent subscription create/list routes and admin cancel route added; subscription activation/charge/pause/cancel webhooks now update local payment lifecycle and recurring fee-ledger state |
 | NOTIF-01-BE | NOTIF-01 | Push + SMS Notifications | DONE | Notification adapter added for push/SMS logging and delivery; push subscription auth route, core business-event hooks, and fee-due reminder script implemented |
 | REPORT-01-BE | REPORT-01 | Video Library API | DONE | Published browse route added under `/api/videos`; admin create/update/delete/list routes added under `/api/admin/videos`; YouTube embed normalization and branch-admin scoping implemented |
+| REPORT-02-BE | REPORT-02 | Admin Reports API | DONE | Revenue, attendance, and enrollment stats report routes added under `/api/admin/reports` with branch-admin scoping |
