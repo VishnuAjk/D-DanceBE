@@ -8,6 +8,7 @@ import { Batch } from '../../models/Batch';
 import { Enrollment } from '../../models/Enrollment';
 import { FeeLedger } from '../../models/FeeLedger';
 import { notifyParentEnrollmentApproved, notifyParentEnrollmentRejected } from '../../services/notifications';
+import { branchScopedValue } from '../../utils/branchScope';
 import { sendSuccess } from '../../utils/response';
 
 export const enrollmentsRouter: ExpressRouter = Router();
@@ -58,9 +59,7 @@ enrollmentsRouter.get('/', async (req, res, next) => {
     }
 
     if (req.user?.role === 'branch_admin') {
-      filter.branchId = {
-        $in: query.branchId ? [query.branchId] : req.user.branchIds
-      };
+      filter.branchId = branchScopedValue(req.user, query.branchId);
     }
 
     const enrollments = await Enrollment.find(filter)

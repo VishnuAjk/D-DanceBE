@@ -15,14 +15,27 @@ import { sendSuccess } from '../utils/response';
 export const authRouter: ExpressRouter = Router();
 
 const otpRateLimit = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 3,
+  windowMs: 60_000,
+  max: 10,
   keyGenerator: (req) => String(req.body?.phone || req.ip || 'unknown'),
   message: {
     success: false,
     error: {
       code: 'RATE_LIMITED',
-      message: 'Too many OTP requests. Try again in 10 minutes.'
+      message: 'Too many OTP requests. Try again shortly.'
+    }
+  }
+});
+
+const credentialRateLimit = rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  keyGenerator: (req) => String(req.body?.phone || req.ip || 'unknown'),
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMITED',
+      message: 'Too many authentication attempts. Try again shortly.'
     }
   }
 });
@@ -66,7 +79,7 @@ authRouter.post('/otp-send', otpRateLimit, async (req, res, next) => {
   }
 });
 
-authRouter.post('/otp-verify', async (req, res, next) => {
+authRouter.post('/otp-verify', credentialRateLimit, async (req, res, next) => {
   try {
     const { phone, otp, txnId } = z
       .object({

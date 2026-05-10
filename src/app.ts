@@ -18,6 +18,19 @@ import { sendSuccess } from './utils/response';
 
 export function createApp(): Express {
   const app = express();
+  const globalApiLimit = rateLimit({
+    windowMs: 60_000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Too many requests. Try again shortly.'
+      }
+    }
+  });
 
   // Security headers
   app.use(helmet());
@@ -30,14 +43,7 @@ export function createApp(): Express {
     })
   );
   app.use(compression());
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 300,
-      standardHeaders: true,
-      legacyHeaders: false
-    })
-  );
+  app.use('/api', globalApiLimit);
 
   // Raw body MUST come before json() parser because Razorpay webhook needs raw body.
   app.use('/api/webhooks/razorpay', express.raw({ type: 'application/json' }));

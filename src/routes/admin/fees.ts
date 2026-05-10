@@ -6,6 +6,7 @@ import { requireBranchAccess } from '../../middleware/rbac';
 import { logAudit } from '../../models/AuditLog';
 import { Enrollment } from '../../models/Enrollment';
 import { FeeLedger } from '../../models/FeeLedger';
+import { branchScopedValue } from '../../utils/branchScope';
 import { sendSuccess } from '../../utils/response';
 
 export const feesRouter: ExpressRouter = Router();
@@ -53,7 +54,7 @@ feesRouter.post('/generate', async (req, res, next) => {
     }
 
     if (req.user?.role === 'branch_admin') {
-      filter.branchId = payload.branchId ? { $in: [payload.branchId] } : { $in: req.user.branchIds };
+      filter.branchId = branchScopedValue(req.user, payload.branchId);
     }
 
     const enrollments = await Enrollment.find(filter).select('_id childId branchId batchId').lean();
@@ -143,7 +144,7 @@ feesRouter.get('/ledger', async (req, res, next) => {
     }
 
     if (req.user?.role === 'branch_admin') {
-      filter.branchId = query.branchId ? { $in: [query.branchId] } : { $in: req.user.branchIds };
+      filter.branchId = branchScopedValue(req.user, query.branchId);
     }
 
     const ledger = await FeeLedger.find(filter)

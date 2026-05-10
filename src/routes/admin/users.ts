@@ -10,6 +10,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { logAudit } from '../../models/AuditLog';
 import { Branch } from '../../models/Branch';
 import { User } from '../../models/User';
+import { branchScopedValue } from '../../utils/branchScope';
 import { sendSuccess } from '../../utils/response';
 import {
   assertCanAssignBranches,
@@ -98,9 +99,7 @@ usersRouter.get('/', async (req, res, next) => {
     }
 
     if (actor.role === UserRole.BRANCH_ADMIN) {
-      filter.branchIds = {
-        $in: query.branchId ? [query.branchId] : actor.branchIds
-      };
+      filter.branchIds = branchScopedValue(req.user!, query.branchId);
       filter.role = query.role ?? { $ne: UserRole.SUPER_ADMIN };
     } else if (query.branchId) {
       filter.branchIds = query.branchId;

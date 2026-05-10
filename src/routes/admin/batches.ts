@@ -5,6 +5,7 @@ import { requireBranchAccess } from '../../middleware/rbac';
 import { logAudit } from '../../models/AuditLog';
 import { Batch } from '../../models/Batch';
 import { Enrollment } from '../../models/Enrollment';
+import { branchScopedValue } from '../../utils/branchScope';
 import { sendSuccess } from '../../utils/response';
 
 export const batchesRouter: ExpressRouter = Router();
@@ -58,9 +59,7 @@ batchesRouter.get('/', async (req, res, next) => {
     }
 
     if (req.user?.role === 'branch_admin') {
-      filter.branchId = {
-        $in: query.branchId ? [query.branchId] : req.user.branchIds
-      };
+      filter.branchId = branchScopedValue(req.user, query.branchId);
     }
 
     const batches = await Batch.find(filter)
