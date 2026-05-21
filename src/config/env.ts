@@ -25,6 +25,8 @@ const EnvSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().default('mailto:admin@danceapp.com'),
+  SENTRY_DSN: z.string().optional(),
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0.1),
   REDIS_URL: z.string().optional(),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
   COOKIE_DOMAIN: z.string().default('localhost')

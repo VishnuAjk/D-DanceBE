@@ -27,3 +27,4 @@
 | REPORT-01-BE | REPORT-01 | Video Library API | DONE | Published browse route added under `/api/videos`; admin create/update/delete/list routes added under `/api/admin/videos`; YouTube embed normalization and branch-admin scoping implemented |
 | REPORT-02-BE | REPORT-02 | Admin Reports API | DONE | Revenue, attendance, and enrollment stats report routes added under `/api/admin/reports` with branch-admin scoping |
 | SEC-01-BE | SEC-01 | Security Hardening | DONE | API/auth rate limiting tightened, branch-admin `branchId` query/body scoping centralized, and sensitive log redaction expanded |
+| REL-01-BE | REL-01 | Deployment Setup | IN_PROGRESS | Local Sentry/env/runbook setup complete; Railway service, production env values, and Atlas allowlist must be completed with deployment account access |

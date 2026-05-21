@@ -18,7 +18,8 @@ const redact: LoggerOptions['redact'] = {
     'JWT_ACCESS_SECRET',
     'JWT_REFRESH_SECRET',
     'RAZORPAY_KEY_SECRET',
-    'RAZORPAY_WEBHOOK_SECRET'
+    'RAZORPAY_WEBHOOK_SECRET',
+    'SENTRY_DSN'
   ],
   censor: '[REDACTED]'
 };
