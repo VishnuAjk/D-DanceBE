@@ -26,3 +26,4 @@
 | REPORT-01-BE | Video Library API | DONE | `GET /api/videos` plus admin video CRUD routes added; YouTube URLs now normalize to embed and thumbnail URLs; BE lint/typecheck passed |
 | REPORT-02-BE | Admin Reports API | DONE | Revenue, attendance, and enrollment stats report routes added under `/api/admin/reports` with branch-admin scoping; BE lint/typecheck passed |
 | SEC-01-BE | Security Hardening | DONE | Global `/api` rate limit set to 100/min; OTP verify/send limited to 10/min; branch-admin branch filters reject unauthorized `branchId`; log redaction covers auth cookies/tokens/secrets; BE lint/test/typecheck/build passed |
+| REL-01-BE | Deployment Setup | IN_PROGRESS | `@sentry/node` integration added behind `SENTRY_DSN`; production env template updated; deploy runbook added; BE lint/test/typecheck/build passed; Railway/Atlas provisioning remains external |

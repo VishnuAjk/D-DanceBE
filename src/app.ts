@@ -5,6 +5,7 @@ import express, { type Express } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { env } from './config/env';
+import { setupSentryErrorHandler } from './config/sentry';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/logger';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -82,6 +83,7 @@ export function createApp(): Express {
     });
   });
 
+  setupSentryErrorHandler(app);
   app.use(errorHandler);
 
   return app;
