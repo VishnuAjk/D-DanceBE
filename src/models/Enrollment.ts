@@ -3,7 +3,7 @@ import { Document, Schema, model } from 'mongoose';
 type EnrollmentStatus = 'PENDING' | 'APPROVED' | 'ACTIVE' | 'SUSPENDED' | 'CANCELLED';
 
 export interface IEnrollment extends Document {
-  childId: Schema.Types.ObjectId;
+  studentProfileId: Schema.Types.ObjectId;
   batchId: Schema.Types.ObjectId;
   branchId: Schema.Types.ObjectId;
   status: EnrollmentStatus;
@@ -17,7 +17,7 @@ export interface IEnrollment extends Document {
 
 const EnrollmentSchema = new Schema<IEnrollment>(
   {
-    childId: { type: Schema.Types.ObjectId, ref: 'Child', required: true, index: true },
+    studentProfileId: { type: Schema.Types.ObjectId, ref: 'StudentProfile', required: true, index: true },
     batchId: { type: Schema.Types.ObjectId, ref: 'Batch', required: true, index: true },
     branchId: { type: Schema.Types.ObjectId, ref: 'Branch', required: true, index: true },
     status: {
@@ -34,6 +34,6 @@ const EnrollmentSchema = new Schema<IEnrollment>(
   { timestamps: true }
 );
 
-EnrollmentSchema.index({ childId: 1, batchId: 1 }, { unique: true });
+EnrollmentSchema.index({ studentProfileId: 1, batchId: 1 }, { unique: true });
 
 export const Enrollment = model<IEnrollment>('Enrollment', EnrollmentSchema);

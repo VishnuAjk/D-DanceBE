@@ -64,6 +64,7 @@ export function createApp(): Express {
   app.use('/api/auth', authRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/instructor', instructorRouter);
+  app.use('/api/portal', studentRouter);
   app.use('/api/student', studentRouter);
   app.use('/api/videos', videosRouter);
   app.use('/api/webhooks', webhookRouter);

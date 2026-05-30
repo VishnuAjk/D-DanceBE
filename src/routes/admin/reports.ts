@@ -114,7 +114,7 @@ reportsRouter.get('/attendance', async (req, res, next) => {
       batchId: query.batchId,
       date: { $gte: start, $lt: end }
     })
-      .populate('childId', 'name')
+      .populate('studentProfileId', 'name')
       .sort({ date: 1, createdAt: 1 })
       .lean();
 
@@ -135,9 +135,9 @@ reportsRouter.get('/attendance', async (req, res, next) => {
         _id: String(row._id),
         date: row.date.toISOString(),
         status: row.status,
-        childName:
-          typeof row.childId === 'object' && row.childId && 'name' in row.childId
-            ? String(row.childId.name)
+        studentProfileName:
+          typeof row.studentProfileId === 'object' && row.studentProfileId && 'name' in row.studentProfileId
+            ? String(row.studentProfileId.name)
             : 'Student',
         notes: row.notes
       }))

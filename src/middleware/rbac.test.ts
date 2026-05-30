@@ -21,13 +21,13 @@ describe('rbac middleware', () => {
     next = vi.fn();
   });
 
-  it('requireRole rejects parent users for super_admin access', () => {
+  it('requireRole rejects customer users for super_admin access', () => {
     const req = {
       headers: { 'x-request-id': 'req-1' },
       user: {
         _id: 'user-1',
         userId: 'user-1',
-        role: 'parent',
+        role: 'customer',
         branchIds: ['branch-1']
       }
     } as unknown as Request;

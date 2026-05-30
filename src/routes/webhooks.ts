@@ -5,7 +5,7 @@ import { logger } from '../middleware/logger';
 import { logAudit } from '../models/AuditLog';
 import { FeeLedger } from '../models/FeeLedger';
 import { Payment } from '../models/Payment';
-import { notifyParentPaymentConfirmed } from '../services/notifications';
+import { notifyCustomerPaymentConfirmed } from '../services/notifications';
 
 export const webhookRouter: ExpressRouter = Router();
 
@@ -133,9 +133,9 @@ webhookRouter.post('/razorpay', async (req, res) => {
         );
       }
 
-      if (paymentRecord.parentId) {
+      if (paymentRecord.customerId) {
         await logAudit({
-          actorId: String(paymentRecord.parentId),
+          actorId: String(paymentRecord.customerId),
           action: 'PAYMENT_CAPTURED',
           resourceType: 'payment',
           resourceId: String(paymentRecord._id),
@@ -150,9 +150,9 @@ webhookRouter.post('/razorpay', async (req, res) => {
         });
       }
 
-      void notifyParentPaymentConfirmed({
-        parentId: paymentRecord.parentId ? String(paymentRecord.parentId) : undefined,
-        childId: paymentRecord.childId ? String(paymentRecord.childId) : undefined,
+      void notifyCustomerPaymentConfirmed({
+        customerId: paymentRecord.customerId ? String(paymentRecord.customerId) : undefined,
+        studentProfileId: paymentRecord.studentProfileId ? String(paymentRecord.studentProfileId) : undefined,
         amount: paymentEntity.amount
       });
     }
@@ -175,9 +175,9 @@ webhookRouter.post('/razorpay', async (req, res) => {
         { new: true }
       );
 
-      if (paymentRecord?.parentId) {
+      if (paymentRecord?.customerId) {
         await logAudit({
-          actorId: String(paymentRecord.parentId),
+          actorId: String(paymentRecord.customerId),
           action: 'PAYMENT_FAILED',
           resourceType: 'payment',
           resourceId: String(paymentRecord._id),
@@ -224,9 +224,9 @@ webhookRouter.post('/razorpay', async (req, res) => {
       };
       await paymentRecord.save();
 
-      void notifyParentPaymentConfirmed({
-        parentId: paymentRecord.parentId ? String(paymentRecord.parentId) : undefined,
-        childId: paymentRecord.childId ? String(paymentRecord.childId) : undefined,
+      void notifyCustomerPaymentConfirmed({
+        customerId: paymentRecord.customerId ? String(paymentRecord.customerId) : undefined,
+        studentProfileId: paymentRecord.studentProfileId ? String(paymentRecord.studentProfileId) : undefined,
         amount: paymentRecord.amount
       });
     }
@@ -266,9 +266,9 @@ webhookRouter.post('/razorpay', async (req, res) => {
       };
       await paymentRecord.save();
 
-      void notifyParentPaymentConfirmed({
-        parentId: paymentRecord.parentId ? String(paymentRecord.parentId) : undefined,
-        childId: paymentRecord.childId ? String(paymentRecord.childId) : undefined,
+      void notifyCustomerPaymentConfirmed({
+        customerId: paymentRecord.customerId ? String(paymentRecord.customerId) : undefined,
+        studentProfileId: paymentRecord.studentProfileId ? String(paymentRecord.studentProfileId) : undefined,
         amount: paymentEntity?.amount ?? paymentRecord.amount
       });
     }

@@ -118,7 +118,7 @@ authRouter.post('/otp-verify', credentialRateLimit, async (req, res, next) => {
       user = await User.create({
         phone,
         name: 'New User',
-        role: 'parent'
+        role: 'customer'
       });
     }
 

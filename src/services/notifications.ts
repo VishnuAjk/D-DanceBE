@@ -1,6 +1,6 @@
 import { sendPushNotification, sendSmsNotification } from '../adapters/notification';
 import { logger } from '../middleware/logger';
-import { Child } from '../models/Child';
+import { StudentProfile } from '../models/StudentProfile';
 import { FeeLedger } from '../models/FeeLedger';
 import { User } from '../models/User';
 
@@ -12,21 +12,21 @@ async function notifySafely(task: Promise<unknown>, context: string) {
   }
 }
 
-async function findParentForChild(childId: string) {
-  const child = await Child.findById(childId).select('name parentId');
-  if (!child) {
+async function findCustomerForStudentProfile(studentProfileId: string) {
+  const studentProfile = await StudentProfile.findById(studentProfileId).select('name customerId');
+  if (!studentProfile) {
     return null;
   }
 
-  const parent = await User.findById(child.parentId).select('phone name');
-  if (!parent) {
+  const customer = await User.findById(studentProfile.customerId).select('phone name');
+  if (!customer) {
     return null;
   }
 
-  return { child, parent };
+  return { studentProfile, customer };
 }
 
-export async function notifyBranchAdminsEnrollmentSubmitted(branchId: string, childName: string) {
+export async function notifyBranchAdminsEnrollmentSubmitted(branchId: string, studentProfileName: string) {
   const admins = await User.find({
     role: 'branch_admin',
     status: 'active',
@@ -38,7 +38,7 @@ export async function notifyBranchAdminsEnrollmentSubmitted(branchId: string, ch
       await notifySafely(
         sendPushNotification(String(admin._id), 'ENROLLMENT_SUBMITTED_PUSH', {
           title: 'New enrollment request',
-          body: `${childName} has a new enrollment request awaiting review.`,
+          body: `${studentProfileName} has a new enrollment request awaiting review.`,
           url: '/admin/enrollments'
         }),
         'ENROLLMENT_SUBMITTED_PUSH'
@@ -50,7 +50,7 @@ export async function notifyBranchAdminsEnrollmentSubmitted(branchId: string, ch
           'ENROLLMENT_SUBMITTED_SMS',
           admin.phone,
           {
-            message: `Dance App: New enrollment request for ${childName} is awaiting review.`
+            message: `Dance App: New enrollment request for ${studentProfileName} is awaiting review.`
           }
         ),
         'ENROLLMENT_SUBMITTED_SMS'
@@ -59,77 +59,77 @@ export async function notifyBranchAdminsEnrollmentSubmitted(branchId: string, ch
   );
 }
 
-export async function notifyParentEnrollmentApproved(childId: string) {
-  const result = await findParentForChild(childId);
+export async function notifyCustomerEnrollmentApproved(studentProfileId: string) {
+  const result = await findCustomerForStudentProfile(studentProfileId);
   if (!result) {
     return;
   }
 
   await notifySafely(
-    sendPushNotification(String(result.parent._id), 'ENROLLMENT_APPROVED_PUSH', {
+    sendPushNotification(String(result.customer._id), 'ENROLLMENT_APPROVED_PUSH', {
       title: 'Enrollment approved',
-      body: `${result.child.name}'s enrollment was approved.`,
-      url: '/parent/enrollments'
+      body: `${result.studentProfile.name}'s enrollment was approved.`,
+      url: '/portal/enrollments'
     }),
     'ENROLLMENT_APPROVED_PUSH'
   );
 }
 
-export async function notifyParentEnrollmentRejected(childId: string) {
-  const result = await findParentForChild(childId);
+export async function notifyCustomerEnrollmentRejected(studentProfileId: string) {
+  const result = await findCustomerForStudentProfile(studentProfileId);
   if (!result) {
     return;
   }
 
   await notifySafely(
-    sendPushNotification(String(result.parent._id), 'ENROLLMENT_REJECTED_PUSH', {
+    sendPushNotification(String(result.customer._id), 'ENROLLMENT_REJECTED_PUSH', {
       title: 'Enrollment update',
-      body: `${result.child.name}'s enrollment request was rejected.`,
-      url: '/parent/enrollments'
+      body: `${result.studentProfile.name}'s enrollment request was rejected.`,
+      url: '/portal/enrollments'
     }),
     'ENROLLMENT_REJECTED_PUSH'
   );
 
   await notifySafely(
     sendSmsNotification(
-      String(result.parent._id),
+      String(result.customer._id),
       'ENROLLMENT_REJECTED_SMS',
-      result.parent.phone,
+      result.customer.phone,
       {
-        message: `Dance App: ${result.child.name}'s enrollment request was rejected. Check the parent portal for details.`
+        message: `Dance App: ${result.studentProfile.name}'s enrollment request was rejected. Check the portal for details.`
       }
     ),
     'ENROLLMENT_REJECTED_SMS'
   );
 }
 
-export async function notifyParentPaymentConfirmed(payment: {
-  parentId?: string;
-  childId?: string;
+export async function notifyCustomerPaymentConfirmed(payment: {
+  customerId?: string;
+  studentProfileId?: string;
   amount?: number;
 }) {
-  let parentId = payment.parentId;
-  let childName = 'Your child';
+  let customerId = payment.customerId;
+  let studentProfileName = 'Your student profile';
   let phone: string | null = null;
 
-  if (payment.childId) {
-    const result = await findParentForChild(payment.childId);
+  if (payment.studentProfileId) {
+    const result = await findCustomerForStudentProfile(payment.studentProfileId);
     if (result) {
-      parentId = parentId ?? String(result.parent._id);
-      childName = result.child.name;
-      phone = result.parent.phone;
+      customerId = customerId ?? String(result.customer._id);
+      studentProfileName = result.studentProfile.name;
+      phone = result.customer.phone;
     }
   }
 
-  if (!parentId) {
+  if (!customerId) {
     return;
   }
 
   await notifySafely(
-    sendPushNotification(parentId, 'PAYMENT_CONFIRMED_PUSH', {
+    sendPushNotification(customerId, 'PAYMENT_CONFIRMED_PUSH', {
       title: 'Payment confirmed',
-      body: `${childName}'s payment of INR ${(Number(payment.amount ?? 0) / 100).toFixed(2)} was confirmed.`,
-      url: '/parent/fees'
+      body: `${studentProfileName}'s payment of INR ${(Number(payment.amount ?? 0) / 100).toFixed(2)} was confirmed.`,
+      url: '/portal/fees'
     }),
     'PAYMENT_CONFIRMED_PUSH'
   );
@@ -139,17 +139,17 @@ export async function notifyParentPaymentConfirmed(payment: {
   }
 }
 
-export async function notifyParentAssessmentShared(childId: string) {
-  const result = await findParentForChild(childId);
+export async function notifyCustomerAssessmentShared(studentProfileId: string) {
+  const result = await findCustomerForStudentProfile(studentProfileId);
   if (!result) {
     return;
   }
 
   await notifySafely(
-    sendPushNotification(String(result.parent._id), 'ASSESSMENT_SHARED_PUSH', {
+    sendPushNotification(String(result.customer._id), 'ASSESSMENT_SHARED_PUSH', {
       title: 'Assessment shared',
-      body: `A new progress assessment for ${result.child.name} is available.`,
-      url: '/parent/assessments'
+      body: `A new progress assessment for ${result.studentProfile.name} is available.`,
+      url: '/portal/assessments'
     }),
     'ASSESSMENT_SHARED_PUSH'
   );
@@ -160,39 +160,39 @@ export async function sendFeeDueNotifications(referenceDate = new Date()) {
   const ledgers = await FeeLedger.find({
     month,
     status: { $in: ['DUE', 'OVERDUE'] }
-  }).select('_id childId finalAmount month');
+  }).select('_id studentProfileId finalAmount month');
 
-  const sentToParents = new Set<string>();
+  const sentToCustomers = new Set<string>();
 
   for (const ledger of ledgers) {
-    const result = await findParentForChild(String(ledger.childId));
+    const result = await findCustomerForStudentProfile(String(ledger.studentProfileId));
     if (!result) {
       continue;
     }
 
-    const parentId = String(result.parent._id);
-    if (sentToParents.has(parentId)) {
+    const customerId = String(result.customer._id);
+    if (sentToCustomers.has(customerId)) {
       continue;
     }
 
-    sentToParents.add(parentId);
+    sentToCustomers.add(customerId);
 
     await notifySafely(
-      sendPushNotification(parentId, 'FEE_DUE_PUSH', {
+      sendPushNotification(customerId, 'FEE_DUE_PUSH', {
         title: 'Fee due reminder',
-        body: `Fee payment for ${result.child.name} is due for ${ledger.month}.`,
-        url: '/parent/fees'
+        body: `Fee payment for ${result.studentProfile.name} is due for ${ledger.month}.`,
+        url: '/portal/fees'
       }),
       'FEE_DUE_PUSH'
     );
 
     await notifySafely(
-      sendSmsNotification(parentId, 'FEE_DUE_SMS', result.parent.phone, {
-        message: `Dance App: Fee payment for ${result.child.name} is due for ${ledger.month}.`
+      sendSmsNotification(customerId, 'FEE_DUE_SMS', result.customer.phone, {
+        message: `Dance App: Fee payment for ${result.studentProfile.name} is due for ${ledger.month}.`
       }),
       'FEE_DUE_SMS'
     );
   }
 
-  return { month, parentCount: sentToParents.size };
+  return { month, customerCount: sentToCustomers.size };
 }

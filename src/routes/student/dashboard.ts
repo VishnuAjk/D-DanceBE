@@ -1,6 +1,6 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import { Attendance } from '../../models/Attendance';
-import { Child } from '../../models/Child';
+import { StudentProfile } from '../../models/StudentProfile';
 import { Enrollment } from '../../models/Enrollment';
 import { FeeLedger } from '../../models/FeeLedger';
 import { sendSuccess } from '../../utils/response';
@@ -47,32 +47,32 @@ function resolveNextClassDate(days: string[], startTime: string) {
 
 dashboardRouter.get('/', async (req, res, next) => {
   try {
-    const children = await Child.find({
-      parentId: req.user!.userId,
+    const studentProfiles = await StudentProfile.find({
+      customerId: req.user!.userId,
       isActive: true
     }).select('_id name');
-    const childIds = children.map((child) => child._id);
+    const studentProfileIds = studentProfiles.map((studentProfile) => studentProfile._id);
 
     const activeEnrollments = await Enrollment.find({
-      childId: { $in: childIds },
+      studentProfileId: { $in: studentProfileIds },
       status: { $in: ['APPROVED', 'ACTIVE'] }
     })
-      .populate('childId', 'name')
+      .populate('studentProfileId', 'name')
       .populate('batchId', 'name schedule monthlyFee')
       .populate('branchId', 'name city');
 
     const upcomingFee = await FeeLedger.findOne({
-      childId: { $in: childIds },
+      studentProfileId: { $in: studentProfileIds },
       status: { $in: ['DUE', 'OVERDUE'] }
     })
-      .populate('childId', 'name')
+      .populate('studentProfileId', 'name')
       .sort({ dueDate: 1 });
 
     const attendanceSince = new Date();
     attendanceSince.setDate(attendanceSince.getDate() - 30);
 
     const attendanceRecords = await Attendance.find({
-      childId: { $in: childIds },
+      studentProfileId: { $in: studentProfileIds },
       date: { $gte: attendanceSince }
     });
 
@@ -85,7 +85,7 @@ dashboardRouter.get('/', async (req, res, next) => {
         : null;
 
     let nextClass: {
-      childName: string;
+      studentProfileName: string;
       batchName: string;
       branchName: string;
       schedule: { days: string[]; startTime: string; endTime: string };
@@ -97,7 +97,7 @@ dashboardRouter.get('/', async (req, res, next) => {
         name: string;
         schedule: { days: string[]; startTime: string; endTime: string };
       };
-      const child = enrollment.childId as unknown as { name: string };
+      const studentProfile = enrollment.studentProfileId as unknown as { name: string };
       const branch = enrollment.branchId as unknown as { name: string };
       const startsAt = resolveNextClassDate(batch.schedule.days, batch.schedule.startTime);
 
@@ -107,7 +107,7 @@ dashboardRouter.get('/', async (req, res, next) => {
 
       if (!nextClass || new Date(startsAt) < new Date(nextClass.startsAt)) {
         nextClass = {
-          childName: child.name,
+          studentProfileName: studentProfile.name,
           batchName: batch.name,
           branchName: branch.name,
           schedule: batch.schedule,
@@ -117,11 +117,11 @@ dashboardRouter.get('/', async (req, res, next) => {
     }
 
     return sendSuccess(req, res, {
-      childrenCount: children.length,
+      studentProfilesCount: studentProfiles.length,
       activeEnrollmentsCount: activeEnrollments.length,
       upcomingFee: upcomingFee
         ? {
-            childName: (upcomingFee.childId as unknown as { name: string }).name,
+            studentProfileName: (upcomingFee.studentProfileId as unknown as { name: string }).name,
             amount: upcomingFee.finalAmount,
             dueDate: upcomingFee.dueDate.toISOString(),
             month: upcomingFee.month,

@@ -24,7 +24,7 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true, trim: true },
     role: {
       type: String,
-      enum: ['super_admin', 'branch_admin', 'instructor', 'parent'],
+      enum: ['super_admin', 'branch_admin', 'instructor', 'customer', 'parent'],
       required: true
     },
     branchIds: [{ type: Schema.Types.ObjectId, ref: 'Branch' }],
