@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "seed:dev": "tsx src/scripts/seed-dev.ts",
+    "migrate:customer-domain": "tsx src/scripts/migrate-customer-student-domain.ts",
     "notify:fee-due": "tsx src/scripts/send-fee-due-reminders.ts",
     "test:integrations": "tsx src/scripts/check-integrations.ts",
     "test:razorpay:webhook": "tsx src/scripts/send-razorpay-webhook.ts",

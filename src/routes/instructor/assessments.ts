@@ -5,7 +5,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { Assessment } from '../../models/Assessment';
 import { Batch } from '../../models/Batch';
 import { Enrollment } from '../../models/Enrollment';
-import { notifyParentAssessmentShared } from '../../services/notifications';
+import { notifyCustomerAssessmentShared } from '../../services/notifications';
 import { sendSuccess } from '../../utils/response';
 
 export const assessmentsRouter: ExpressRouter = Router();
@@ -17,7 +17,7 @@ const SkillScoreSchema = z.object({
 });
 
 const CreateAssessmentSchema = z.object({
-  childId: ObjectIdString,
+  studentProfileId: ObjectIdString,
   batchId: ObjectIdString,
   assessedAt: ISODateString.optional(),
   overallScore: z.number().min(0).max(100).optional(),
@@ -25,7 +25,7 @@ const CreateAssessmentSchema = z.object({
   skillScores: z.array(SkillScoreSchema).max(20).optional()
 });
 
-const UpdateAssessmentSchema = CreateAssessmentSchema.omit({ childId: true, batchId: true }).partial().refine(
+const UpdateAssessmentSchema = CreateAssessmentSchema.omit({ studentProfileId: true, batchId: true }).partial().refine(
   (value) => Object.keys(value).length > 0,
   'At least one field must be provided'
 );
@@ -54,15 +54,15 @@ async function findInstructorBatch(batchId: string, userId: string, isSuperAdmin
   return batch;
 }
 
-async function assertChildInBatch(childId: string, batchId: string) {
+async function assertStudentProfileInBatch(studentProfileId: string, batchId: string) {
   const exists = await Enrollment.exists({
-    childId,
+    studentProfileId,
     batchId,
     status: { $in: ['APPROVED', 'ACTIVE', 'SUSPENDED'] }
   });
 
   if (!exists) {
-    throw new AppError(400, 'INVALID_CHILD', 'Child is not enrolled in this batch');
+    throw new AppError(400, 'INVALID_STUDENT_PROFILE', 'Student profile is not enrolled in this batch');
   }
 }
 
@@ -71,10 +71,10 @@ assessmentsRouter.post('/', async (req, res, next) => {
     const payload = CreateAssessmentSchema.parse(req.body);
     const isSuperAdmin = req.user?.role === 'super_admin';
     const batch = await findInstructorBatch(payload.batchId, req.user!._id, isSuperAdmin);
-    await assertChildInBatch(payload.childId, payload.batchId);
+    await assertStudentProfileInBatch(payload.studentProfileId, payload.batchId);
 
     const assessment = await Assessment.create({
-      childId: payload.childId,
+      studentProfileId: payload.studentProfileId,
       batchId: payload.batchId,
       branchId: batch.branchId,
       levelId: batch.levelId,
@@ -146,7 +146,7 @@ assessmentsRouter.get('/', async (req, res, next) => {
     }
 
     const records = await Assessment.find(filter)
-      .populate('childId', 'name dob gender photo')
+      .populate('studentProfileId', 'name dob gender photo')
       .populate('batchId', 'name')
       .sort({ assessedAt: -1, createdAt: -1 });
 
@@ -172,12 +172,12 @@ assessmentsRouter.put('/:id/share', async (req, res, next) => {
 
     const updated = await Assessment.findByIdAndUpdate(
       id,
-      { sharedWithParent: true, sharedAt: new Date() },
+      { sharedWithCustomer: true, sharedAt: new Date() },
       { new: true, runValidators: true }
     );
 
     if (updated) {
-      void notifyParentAssessmentShared(String(updated.childId));
+      void notifyCustomerAssessmentShared(String(updated.studentProfileId));
     }
 
     return sendSuccess(req, res, updated);

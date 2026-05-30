@@ -187,7 +187,7 @@ batchesRouter.get(
             batchId: id,
             status: { $in: ['APPROVED', 'ACTIVE', 'SUSPENDED'] }
           })
-            .populate('childId', 'name dob gender photo')
+            .populate('studentProfileId', 'name dob gender photo')
             .sort({ createdAt: -1 });
 
           return sendSuccess(req, res, roster);

@@ -6,7 +6,7 @@ import { sendFeeDueNotifications } from '../services/notifications';
 async function main() {
   await connectDB(env.MONGODB_URI);
   const result = await sendFeeDueNotifications();
-  console.log(`Sent fee due reminders for ${result.month} to ${result.parentCount} parent accounts`);
+  console.log(`Sent fee due reminders for ${result.month} to ${result.customerCount} customer accounts`);
 }
 
 main()

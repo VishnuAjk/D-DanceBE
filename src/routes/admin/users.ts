@@ -21,7 +21,7 @@ import {
 
 export const usersRouter: ExpressRouter = Router();
 
-const ManageableRoleSchema = z.enum([UserRole.BRANCH_ADMIN, UserRole.INSTRUCTOR, UserRole.PARENT]);
+const ManageableRoleSchema = z.enum([UserRole.BRANCH_ADMIN, UserRole.INSTRUCTOR, UserRole.CUSTOMER]);
 const UserStatusSchema = z.enum(['active', 'inactive', 'suspended']);
 
 const CreateUserSchema = z.object({
@@ -81,7 +81,7 @@ usersRouter.get('/', async (req, res, next) => {
   try {
     const query = z
       .object({
-        role: z.enum([UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.INSTRUCTOR, UserRole.PARENT]).optional(),
+        role: z.enum([UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.INSTRUCTOR, UserRole.CUSTOMER]).optional(),
         branchId: ObjectIdString.optional(),
         status: UserStatusSchema.optional()
       })

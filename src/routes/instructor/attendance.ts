@@ -33,7 +33,7 @@ const MarkAttendanceSchema = z.object({
   records: z
     .array(
       z.object({
-        childId: ObjectIdString,
+        studentProfileId: ObjectIdString,
         status: z.enum(['PRESENT', 'ABSENT', 'LATE']),
         notes: z.string().max(200).optional()
       })
@@ -51,21 +51,21 @@ attendanceRouter.post('/mark', async (req, res, next) => {
     const enrollments = await Enrollment.find({
       batchId: payload.batchId,
       status: { $in: ['APPROVED', 'ACTIVE', 'SUSPENDED'] }
-    }).select('childId');
+    }).select('studentProfileId');
 
-    const rosterChildIds = new Set(enrollments.map((enr) => String(enr.childId)));
+    const rosterStudentProfileIds = new Set(enrollments.map((enr) => String(enr.studentProfileId)));
 
     payload.records.forEach((record) => {
-      if (!rosterChildIds.has(record.childId)) {
-        throw new AppError(400, 'INVALID_CHILD', 'One or more attendance records is not in this batch');
+      if (!rosterStudentProfileIds.has(record.studentProfileId)) {
+        throw new AppError(400, 'INVALID_STUDENT_PROFILE', 'One or more attendance records is not in this batch');
       }
     });
 
     const writes = payload.records.map((record) =>
       Attendance.findOneAndUpdate(
-        { childId: record.childId, batchId: payload.batchId, date: parsedDate },
+        { studentProfileId: record.studentProfileId, batchId: payload.batchId, date: parsedDate },
         {
-          childId: record.childId,
+          studentProfileId: record.studentProfileId,
           batchId: payload.batchId,
           branchId: batch.branchId,
           date: parsedDate,
@@ -116,7 +116,7 @@ attendanceRouter.get('/', async (req, res, next) => {
     }
 
     const records = await Attendance.find(filter)
-      .populate('childId', 'name dob gender photo')
+      .populate('studentProfileId', 'name dob gender photo')
       .populate('batchId', 'name')
       .sort({ date: -1, createdAt: -1 });
 

@@ -3,7 +3,7 @@ import { Document, Schema, model } from 'mongoose';
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE';
 
 export interface IAttendance extends Document {
-  childId: Schema.Types.ObjectId;
+  studentProfileId: Schema.Types.ObjectId;
   batchId: Schema.Types.ObjectId;
   branchId: Schema.Types.ObjectId;
   date: Date;
@@ -16,7 +16,7 @@ export interface IAttendance extends Document {
 
 const AttendanceSchema = new Schema<IAttendance>(
   {
-    childId: { type: Schema.Types.ObjectId, ref: 'Child', required: true, index: true },
+    studentProfileId: { type: Schema.Types.ObjectId, ref: 'StudentProfile', required: true, index: true },
     batchId: { type: Schema.Types.ObjectId, ref: 'Batch', required: true, index: true },
     branchId: { type: Schema.Types.ObjectId, ref: 'Branch', required: true, index: true },
     date: { type: Date, required: true, index: true },
@@ -27,6 +27,6 @@ const AttendanceSchema = new Schema<IAttendance>(
   { timestamps: true }
 );
 
-AttendanceSchema.index({ childId: 1, batchId: 1, date: 1 }, { unique: true });
+AttendanceSchema.index({ studentProfileId: 1, batchId: 1, date: 1 }, { unique: true });
 
 export const Attendance = model<IAttendance>('Attendance', AttendanceSchema);
