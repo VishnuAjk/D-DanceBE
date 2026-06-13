@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@danceapp/shared':
-        specifier: file:../D-DanceShared
-        version: file:../D-DanceShared
+        specifier: git+https://github.com/VishnuAjk/D-DanceShared.git#feat/customer-student-portal
+        version: https://codeload.github.com/VishnuAjk/D-DanceShared/tar.gz/4df40d1f42a78cb8fb1cc3258ab528e5a1eecedf
       '@sentry/node':
         specifier: ^10.53.1
         version: 10.53.1
@@ -123,8 +123,9 @@ importers:
 
 packages:
 
-  '@danceapp/shared@file:../D-DanceShared':
-    resolution: {directory: ../D-DanceShared, type: directory}
+  '@danceapp/shared@https://codeload.github.com/VishnuAjk/D-DanceShared/tar.gz/4df40d1f42a78cb8fb1cc3258ab528e5a1eecedf':
+    resolution: {tarball: https://codeload.github.com/VishnuAjk/D-DanceShared/tar.gz/4df40d1f42a78cb8fb1cc3258ab528e5a1eecedf}
+    version: 0.1.0
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -2210,6 +2211,7 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   vary@1.1.2:
@@ -2324,7 +2326,7 @@ packages:
 
 snapshots:
 
-  '@danceapp/shared@file:../D-DanceShared':
+  '@danceapp/shared@https://codeload.github.com/VishnuAjk/D-DanceShared/tar.gz/4df40d1f42a78cb8fb1cc3258ab528e5a1eecedf':
     dependencies:
       zod: 3.25.76
 
