@@ -19,7 +19,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@danceapp/shared": "git+https://github.com/VishnuAjk/D-DanceShared.git#feat/customer-student-portal",
+    "@danceapp/shared": "https://codeload.github.com/VishnuAjk/D-DanceShared/tar.gz/6f57401e7da9c75025f2c0987e2527897b1e7c04",
     "@sentry/node": "^10.53.1",
     "axios": "^1.7.3",
     "compression": "^1.7.4",
