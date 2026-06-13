@@ -6,6 +6,7 @@ import { requireBranchAccess } from '../../middleware/rbac';
 import { logAudit } from '../../models/AuditLog';
 import { Enrollment } from '../../models/Enrollment';
 import { FeeLedger } from '../../models/FeeLedger';
+import { branchScopedValue } from '../../utils/branchScope';
 import { sendSuccess } from '../../utils/response';
 
 export const feesRouter: ExpressRouter = Router();
@@ -53,10 +54,10 @@ feesRouter.post('/generate', async (req, res, next) => {
     }
 
     if (req.user?.role === 'branch_admin') {
-      filter.branchId = payload.branchId ? { $in: [payload.branchId] } : { $in: req.user.branchIds };
+      filter.branchId = branchScopedValue(req.user, payload.branchId);
     }
 
-    const enrollments = await Enrollment.find(filter).select('_id childId branchId batchId').lean();
+    const enrollments = await Enrollment.find(filter).select('_id studentProfileId branchId batchId').lean();
     const batchIds = Array.from(new Set(enrollments.map((enrollment) => String(enrollment.batchId))));
     const batches = await Enrollment.db
       .collection('batches')
@@ -74,7 +75,7 @@ feesRouter.post('/generate', async (req, res, next) => {
           update: {
             $setOnInsert: {
               enrollmentId: enrollment._id,
-              childId: enrollment.childId,
+              studentProfileId: enrollment.studentProfileId,
               branchId: enrollment.branchId,
               month: payload.month,
               amount: monthlyFee,
@@ -120,7 +121,7 @@ feesRouter.get('/ledger', async (req, res, next) => {
         branchId: ObjectIdString.optional(),
         month: MonthString.optional(),
         status: z.enum(['DUE', 'PAID', 'OVERDUE', 'WAIVED']).optional(),
-        childId: ObjectIdString.optional()
+        studentProfileId: ObjectIdString.optional()
       })
       .parse(req.query);
 
@@ -138,16 +139,16 @@ feesRouter.get('/ledger', async (req, res, next) => {
       filter.status = query.status;
     }
 
-    if (query.childId) {
-      filter.childId = query.childId;
+    if (query.studentProfileId) {
+      filter.studentProfileId = query.studentProfileId;
     }
 
     if (req.user?.role === 'branch_admin') {
-      filter.branchId = query.branchId ? { $in: [query.branchId] } : { $in: req.user.branchIds };
+      filter.branchId = branchScopedValue(req.user, query.branchId);
     }
 
     const ledger = await FeeLedger.find(filter)
-      .populate('childId', 'name dob gender photo')
+      .populate('studentProfileId', 'name dob gender photo')
       .populate('branchId', 'name city')
       .populate({
         path: 'enrollmentId',

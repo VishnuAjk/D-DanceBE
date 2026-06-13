@@ -5,6 +5,7 @@ import express, { type Express } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { env } from './config/env';
+import { setupSentryErrorHandler } from './config/sentry';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/logger';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -12,11 +13,25 @@ import { adminRouter } from './routes/admin';
 import { authRouter } from './routes/auth';
 import { instructorRouter } from './routes/instructor';
 import { studentRouter } from './routes/student';
+import { videosRouter } from './routes/videos';
 import { webhookRouter } from './routes/webhooks';
 import { sendSuccess } from './utils/response';
 
 export function createApp(): Express {
   const app = express();
+  const globalApiLimit = rateLimit({
+    windowMs: 60_000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Too many requests. Try again shortly.'
+      }
+    }
+  });
 
   // Security headers
   app.use(helmet());
@@ -29,14 +44,7 @@ export function createApp(): Express {
     })
   );
   app.use(compression());
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 300,
-      standardHeaders: true,
-      legacyHeaders: false
-    })
-  );
+  app.use('/api', globalApiLimit);
 
   // Raw body MUST come before json() parser because Razorpay webhook needs raw body.
   app.use('/api/webhooks/razorpay', express.raw({ type: 'application/json' }));
@@ -56,7 +64,9 @@ export function createApp(): Express {
   app.use('/api/auth', authRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/instructor', instructorRouter);
+  app.use('/api/portal', studentRouter);
   app.use('/api/student', studentRouter);
+  app.use('/api/videos', videosRouter);
   app.use('/api/webhooks', webhookRouter);
 
   app.use((_req, res) => {
@@ -74,6 +84,7 @@ export function createApp(): Express {
     });
   });
 
+  setupSentryErrorHandler(app);
   app.use(errorHandler);
 
   return app;

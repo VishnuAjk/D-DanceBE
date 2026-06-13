@@ -11,11 +11,11 @@ type PaymentStatus =
 type PaymentType = 'one_time' | 'subscription';
 
 export interface IPayment extends Document {
-  parentId?: Schema.Types.ObjectId;
+  customerId?: Schema.Types.ObjectId;
   enrollmentId?: Schema.Types.ObjectId;
   feeLedgerId?: Schema.Types.ObjectId;
   feeLedgerIds?: Schema.Types.ObjectId[];
-  childId?: Schema.Types.ObjectId;
+  studentProfileId?: Schema.Types.ObjectId;
   branchId?: Schema.Types.ObjectId;
   months?: string[];
   amount: number;
@@ -35,11 +35,11 @@ export interface IPayment extends Document {
 
 const PaymentSchema = new Schema<IPayment>(
   {
-    parentId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+    customerId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
     enrollmentId: { type: Schema.Types.ObjectId, ref: 'Enrollment', index: true },
     feeLedgerId: { type: Schema.Types.ObjectId, ref: 'FeeLedger', index: true },
     feeLedgerIds: [{ type: Schema.Types.ObjectId, ref: 'FeeLedger', index: true }],
-    childId: { type: Schema.Types.ObjectId, ref: 'Child', index: true },
+    studentProfileId: { type: Schema.Types.ObjectId, ref: 'StudentProfile', index: true },
     branchId: { type: Schema.Types.ObjectId, ref: 'Branch', index: true },
     months: [{ type: String, match: /^\d{4}-(0[1-9]|1[0-2])$/ }],
     amount: { type: Number, required: true, min: 0 },

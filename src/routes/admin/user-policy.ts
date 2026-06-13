@@ -21,8 +21,12 @@ export function assertCanCreateManagedUser(
   branchIds: string[]
 ) {
   if (actor.role === UserRole.SUPER_ADMIN) {
-    if (targetRole !== UserRole.BRANCH_ADMIN && targetRole !== UserRole.INSTRUCTOR) {
-      throw new AppError(403, 'FORBIDDEN', 'Super admin can only create branch admins or instructors');
+    if (
+      targetRole !== UserRole.BRANCH_ADMIN &&
+      targetRole !== UserRole.INSTRUCTOR &&
+      targetRole !== UserRole.CUSTOMER
+    ) {
+      throw new AppError(403, 'FORBIDDEN', 'Super admin can only create branch admins, instructors, or customers');
     }
 
     return;

@@ -4,32 +4,43 @@ import { z } from 'zod';
 import { AppError } from '../../middleware/errorHandler';
 import { logAudit } from '../../models/AuditLog';
 import { Batch } from '../../models/Batch';
-import { Child } from '../../models/Child';
+import { StudentProfile } from '../../models/StudentProfile';
 import { Enrollment } from '../../models/Enrollment';
+import { notifyBranchAdminsEnrollmentSubmitted } from '../../services/notifications';
 import { sendSuccess } from '../../utils/response';
 
 export const enrollmentsRouter: ExpressRouter = Router();
 export const enrollRouter: ExpressRouter = Router();
 
-const CreateEnrollmentSchema = z.object({
-  childId: ObjectIdString,
-  batchId: ObjectIdString
-});
+const CreateEnrollmentSchema = z
+  .object({
+    studentProfileId: ObjectIdString.optional(),
+    childId: ObjectIdString.optional(),
+    batchId: ObjectIdString
+  })
+  .transform((value) => ({
+    studentProfileId: value.studentProfileId ?? value.childId,
+    batchId: value.batchId
+  }))
+  .refine((value) => Boolean(value.studentProfileId), {
+    message: 'Student profile is required',
+    path: ['studentProfileId']
+  });
 
-async function findOwnedChild(childId: string, parentId: string) {
-  const child = await Child.findOne({ _id: childId, parentId, isActive: true });
+async function findOwnedStudentProfile(studentProfileId: string, customerId: string) {
+  const studentProfile = await StudentProfile.findOne({ _id: studentProfileId, customerId, isActive: true });
 
-  if (!child) {
-    throw new AppError(404, 'NOT_FOUND', 'Child not found');
+  if (!studentProfile) {
+    throw new AppError(404, 'NOT_FOUND', 'Student profile not found');
   }
 
-  return child;
+  return studentProfile;
 }
 
 enrollRouter.post('/', async (req, res, next) => {
   try {
     const payload = CreateEnrollmentSchema.parse(req.body);
-    await findOwnedChild(payload.childId, req.user!.userId);
+    await findOwnedStudentProfile(payload.studentProfileId!, req.user!.userId);
 
     const batch = await Batch.findOne({ _id: payload.batchId, isActive: true });
 
@@ -38,7 +49,7 @@ enrollRouter.post('/', async (req, res, next) => {
     }
 
     const existingEnrollment = await Enrollment.findOne({
-      childId: payload.childId,
+      studentProfileId: payload.studentProfileId!,
       batchId: payload.batchId,
       status: { $in: ['PENDING', 'APPROVED', 'ACTIVE', 'SUSPENDED'] }
     });
@@ -47,12 +58,12 @@ enrollRouter.post('/', async (req, res, next) => {
       throw new AppError(
         409,
         'ENROLLMENT_EXISTS',
-        'An active enrollment request already exists for this child and batch'
+        'An active enrollment request already exists for this student profile and batch'
       );
     }
 
     const enrollment = await Enrollment.create({
-      childId: payload.childId,
+      studentProfileId: payload.studentProfileId!,
       batchId: payload.batchId,
       branchId: batch.branchId,
       status: 'PENDING'
@@ -69,6 +80,11 @@ enrollRouter.post('/', async (req, res, next) => {
       requestId: req.headers['x-request-id'] as string | undefined
     });
 
+    const studentProfile = await StudentProfile.findById(payload.studentProfileId).select('name');
+    if (studentProfile) {
+      void notifyBranchAdminsEnrollmentSubmitted(String(batch.branchId), studentProfile.name);
+    }
+
     return sendSuccess(req, res, enrollment, 201);
   } catch (err) {
     return next(err);
@@ -77,14 +93,14 @@ enrollRouter.post('/', async (req, res, next) => {
 
 enrollmentsRouter.get('/', async (req, res, next) => {
   try {
-    const children = await Child.find({
-      parentId: req.user!.userId,
+    const studentProfiles = await StudentProfile.find({
+      customerId: req.user!.userId,
       isActive: true
     }).select('_id');
-    const childIds = children.map((child) => child._id);
+    const studentProfileIds = studentProfiles.map((studentProfile) => studentProfile._id);
 
-    const enrollments = await Enrollment.find({ childId: { $in: childIds } })
-      .populate('childId', 'name dob gender photo')
+    const enrollments = await Enrollment.find({ studentProfileId: { $in: studentProfileIds } })
+      .populate('studentProfileId', 'name dob gender photo')
       .populate('batchId', 'name schedule monthlyFee')
       .populate('branchId', 'name city')
       .sort({ createdAt: -1 });

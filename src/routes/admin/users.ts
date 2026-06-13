@@ -10,6 +10,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { logAudit } from '../../models/AuditLog';
 import { Branch } from '../../models/Branch';
 import { User } from '../../models/User';
+import { branchScopedValue } from '../../utils/branchScope';
 import { sendSuccess } from '../../utils/response';
 import {
   assertCanAssignBranches,
@@ -20,7 +21,7 @@ import {
 
 export const usersRouter: ExpressRouter = Router();
 
-const ManageableRoleSchema = z.enum([UserRole.BRANCH_ADMIN, UserRole.INSTRUCTOR, UserRole.PARENT]);
+const ManageableRoleSchema = z.enum([UserRole.BRANCH_ADMIN, UserRole.INSTRUCTOR, UserRole.CUSTOMER]);
 const UserStatusSchema = z.enum(['active', 'inactive', 'suspended']);
 
 const CreateUserSchema = z.object({
@@ -80,7 +81,7 @@ usersRouter.get('/', async (req, res, next) => {
   try {
     const query = z
       .object({
-        role: z.enum([UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.INSTRUCTOR, UserRole.PARENT]).optional(),
+        role: z.enum([UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.INSTRUCTOR, UserRole.CUSTOMER]).optional(),
         branchId: ObjectIdString.optional(),
         status: UserStatusSchema.optional()
       })
@@ -98,9 +99,7 @@ usersRouter.get('/', async (req, res, next) => {
     }
 
     if (actor.role === UserRole.BRANCH_ADMIN) {
-      filter.branchIds = {
-        $in: query.branchId ? [query.branchId] : actor.branchIds
-      };
+      filter.branchIds = branchScopedValue(req.user!, query.branchId);
       filter.role = query.role ?? { $ne: UserRole.SUPER_ADMIN };
     } else if (query.branchId) {
       filter.branchIds = query.branchId;

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { getRazorpayClient } from '../../adapters/razorpay';
 import { env } from '../../config/env';
 import { AppError } from '../../middleware/errorHandler';
-import { Child } from '../../models/Child';
+import { StudentProfile } from '../../models/StudentProfile';
 import { Enrollment } from '../../models/Enrollment';
 import { FeeLedger } from '../../models/FeeLedger';
 import { logAudit } from '../../models/AuditLog';
@@ -27,24 +27,24 @@ function currentMonthString() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-async function findOwnedEnrollment(enrollmentId: string, parentId: string) {
-  const children = await Child.find({
-    parentId,
+async function findOwnedEnrollment(enrollmentId: string, customerId: string) {
+  const studentProfiles = await StudentProfile.find({
+    customerId,
     isActive: true
   }).select('_id');
-  const childIds = children.map((child) => child._id);
+  const studentProfileIds = studentProfiles.map((studentProfile) => studentProfile._id);
 
   const enrollment = await Enrollment.findOne({
     _id: enrollmentId,
-    childId: { $in: childIds },
+    studentProfileId: { $in: studentProfileIds },
     status: { $in: ['APPROVED', 'ACTIVE'] }
   })
     .populate('batchId', 'name monthlyFee schedule')
-    .populate('childId', 'name dob gender photo')
+    .populate('studentProfileId', 'name dob gender photo')
     .populate('branchId', 'name city');
 
   if (!enrollment) {
-    throw new AppError(404, 'ENROLLMENT_NOT_FOUND', 'Enrollment not found for this parent');
+    throw new AppError(404, 'ENROLLMENT_NOT_FOUND', 'Enrollment not found for this customer');
   }
 
   return enrollment;
@@ -54,19 +54,21 @@ feesRouter.get('/', async (req, res, next) => {
   try {
     const query = z
       .object({
+        studentProfileId: ObjectIdString.optional(),
         childId: ObjectIdString.optional(),
         month: MonthString.optional()
       })
       .parse(req.query);
 
-    const children = await Child.find({
-      parentId: req.user!.userId,
+    const studentProfiles = await StudentProfile.find({
+      customerId: req.user!.userId,
       isActive: true
     }).select('_id');
 
-    const childIds = children.map((child) => String(child._id));
+    const studentProfileIds = studentProfiles.map((studentProfile) => String(studentProfile._id));
+    const selectedStudentProfileId = query.studentProfileId ?? query.childId;
     const filter: Record<string, unknown> = {
-      childId: { $in: query.childId ? [query.childId] : childIds }
+      studentProfileId: { $in: selectedStudentProfileId ? [selectedStudentProfileId] : studentProfileIds }
     };
 
     if (query.month) {
@@ -74,7 +76,7 @@ feesRouter.get('/', async (req, res, next) => {
     }
 
     const fees = await FeeLedger.find(filter)
-      .populate('childId', 'name dob gender photo')
+      .populate('studentProfileId', 'name dob gender photo')
       .populate('branchId', 'name city')
       .populate({
         path: 'enrollmentId',
@@ -95,19 +97,19 @@ feesRouter.post('/pay', async (req, res, next) => {
   try {
     const payload = InitiatePaymentSchema.parse(req.body);
     const ledgerIds = Array.from(new Set(payload.ledgerIds));
-    const children = await Child.find({
-      parentId: req.user!.userId,
+    const studentProfiles = await StudentProfile.find({
+      customerId: req.user!.userId,
       isActive: true
     }).select('_id');
-    const childIds = children.map((child) => String(child._id));
+    const studentProfileIds = studentProfiles.map((studentProfile) => String(studentProfile._id));
 
     const ledgers = await FeeLedger.find({
       _id: { $in: ledgerIds },
-      childId: { $in: childIds }
+      studentProfileId: { $in: studentProfileIds }
     }).sort({ month: 1, dueDate: 1, createdAt: 1 });
 
     if (ledgers.length !== ledgerIds.length) {
-      throw new AppError(404, 'LEDGER_NOT_FOUND', 'One or more fee entries could not be found for this parent');
+      throw new AppError(404, 'LEDGER_NOT_FOUND', 'One or more fee entries could not be found for this customer');
     }
 
     const invalidStatus = ledgers.find(
@@ -130,7 +132,7 @@ feesRouter.post('/pay', async (req, res, next) => {
       amount,
       currency: 'INR',
       notes: {
-        parentId: req.user!.userId,
+        customerId: req.user!.userId,
         ledgerIds: ledgerIds.join(',')
       }
     });
@@ -138,11 +140,11 @@ feesRouter.post('/pay', async (req, res, next) => {
     const firstLedger = ledgers[0];
 
     const payment = await Payment.create({
-      parentId: req.user!._id,
+      customerId: req.user!._id,
       enrollmentId: firstLedger.enrollmentId,
       feeLedgerId: firstLedger._id,
       feeLedgerIds: ledgers.map((ledger) => ledger._id),
-      childId: firstLedger.childId,
+      studentProfileId: firstLedger.studentProfileId,
       branchId: firstLedger.branchId,
       months: ledgers.map((ledger) => ledger.month),
       amount,
@@ -210,9 +212,9 @@ feesRouter.post('/subscribe', async (req, res, next) => {
       quantity: 1,
       customer_notify: 1,
       notes: {
-        parentId: req.user!.userId,
+        customerId: req.user!.userId,
         enrollmentId: String(enrollment._id),
-        childId: String(enrollment.childId),
+        studentProfileId: String(enrollment.studentProfileId),
         branchId: String(enrollment.branchId)
       }
     });
@@ -223,11 +225,11 @@ feesRouter.post('/subscribe', async (req, res, next) => {
     }).sort({ createdAt: -1 });
 
     const payment = await Payment.create({
-      parentId: req.user!._id,
+      customerId: req.user!._id,
       enrollmentId: enrollment._id,
       feeLedgerId: currentLedger?._id,
       feeLedgerIds: currentLedger ? [currentLedger._id] : [],
-      childId: enrollment.childId,
+      studentProfileId: enrollment.studentProfileId,
       branchId: enrollment.branchId,
       months: currentLedger ? [currentLedger.month] : [],
       amount: Math.round(Number(batch.monthlyFee ?? 0) * 100),
@@ -276,17 +278,17 @@ feesRouter.post('/subscribe', async (req, res, next) => {
 
 feesRouter.get('/subscriptions', async (req, res, next) => {
   try {
-    const children = await Child.find({
-      parentId: req.user!.userId,
+    const studentProfiles = await StudentProfile.find({
+      customerId: req.user!.userId,
       isActive: true
     }).select('_id');
-    const childIds = children.map((child) => child._id);
+    const studentProfileIds = studentProfiles.map((studentProfile) => studentProfile._id);
 
     const subscriptions = await Payment.find({
       type: 'subscription',
-      childId: { $in: childIds }
+      studentProfileId: { $in: studentProfileIds }
     })
-      .populate('childId', 'name dob gender photo')
+      .populate('studentProfileId', 'name dob gender photo')
       .populate('branchId', 'name city')
       .populate({
         path: 'enrollmentId',

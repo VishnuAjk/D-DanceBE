@@ -3,7 +3,7 @@ import { Router, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
 import { AppError } from '../../middleware/errorHandler';
 import { Attendance } from '../../models/Attendance';
-import { Child } from '../../models/Child';
+import { StudentProfile } from '../../models/StudentProfile';
 import { sendSuccess } from '../../utils/response';
 
 export const attendanceRouter: ExpressRouter = Router();
@@ -28,26 +28,35 @@ attendanceRouter.get('/', async (req, res, next) => {
   try {
     const query = z
       .object({
-        childId: ObjectIdString,
+        studentProfileId: ObjectIdString.optional(),
+        childId: ObjectIdString.optional(),
         month: ISO_MONTH
+      })
+      .transform((value) => ({
+        studentProfileId: value.studentProfileId ?? value.childId,
+        month: value.month
+      }))
+      .refine((value) => Boolean(value.studentProfileId), {
+        message: 'Student profile is required',
+        path: ['studentProfileId']
       })
       .parse(req.query);
 
-    const child = await Child.findOne({
-      _id: query.childId,
-      parentId: req.user!.userId,
+    const studentProfile = await StudentProfile.findOne({
+      _id: query.studentProfileId,
+      customerId: req.user!.userId,
       isActive: true
     }).select('_id');
 
-    if (!child) {
-      throw new AppError(404, 'NOT_FOUND', 'Child not found');
+    if (!studentProfile) {
+      throw new AppError(404, 'NOT_FOUND', 'Student profile not found');
     }
 
     const dateFrom = startOfMonthUtc(query.month);
     const dateTo = endOfMonthUtc(query.month);
 
     const records = await Attendance.find({
-      childId: query.childId,
+      studentProfileId: query.studentProfileId,
       date: { $gte: dateFrom, $lte: dateTo }
     })
       .select('date status notes batchId')
@@ -67,4 +76,3 @@ attendanceRouter.get('/', async (req, res, next) => {
     return next(err);
   }
 });
-

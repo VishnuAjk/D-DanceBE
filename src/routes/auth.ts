@@ -15,14 +15,27 @@ import { sendSuccess } from '../utils/response';
 export const authRouter: ExpressRouter = Router();
 
 const otpRateLimit = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 3,
+  windowMs: 60_000,
+  max: 10,
   keyGenerator: (req) => String(req.body?.phone || req.ip || 'unknown'),
   message: {
     success: false,
     error: {
       code: 'RATE_LIMITED',
-      message: 'Too many OTP requests. Try again in 10 minutes.'
+      message: 'Too many OTP requests. Try again shortly.'
+    }
+  }
+});
+
+const credentialRateLimit = rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  keyGenerator: (req) => String(req.body?.phone || req.ip || 'unknown'),
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMITED',
+      message: 'Too many authentication attempts. Try again shortly.'
     }
   }
 });
@@ -35,6 +48,16 @@ const COOKIE_OPTIONS = {
   maxAge: 30 * 24 * 60 * 60 * 1000,
   path: '/'
 };
+
+const PushSubscriptionSchema = z.object({
+  subscription: z.object({
+    endpoint: z.string().url(),
+    keys: z.object({
+      p256dh: z.string().min(1),
+      auth: z.string().min(1)
+    })
+  })
+});
 
 authRouter.post('/otp-send', otpRateLimit, async (req, res, next) => {
   try {
@@ -56,7 +79,7 @@ authRouter.post('/otp-send', otpRateLimit, async (req, res, next) => {
   }
 });
 
-authRouter.post('/otp-verify', async (req, res, next) => {
+authRouter.post('/otp-verify', credentialRateLimit, async (req, res, next) => {
   try {
     const { phone, otp, txnId } = z
       .object({
@@ -95,7 +118,7 @@ authRouter.post('/otp-verify', async (req, res, next) => {
       user = await User.create({
         phone,
         name: 'New User',
-        role: 'parent'
+        role: 'customer'
       });
     }
 
@@ -177,6 +200,34 @@ authRouter.get('/me', authenticate, requireAuth, async (req, res, next) => {
     }
 
     return sendSuccess(req, res, user);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+authRouter.post('/push-subscribe', authenticate, requireAuth, async (req, res, next) => {
+  try {
+    const payload = PushSubscriptionSchema.parse(req.body);
+    const user = await User.findById(req.user!.userId);
+
+    if (!user) {
+      throw new AppError(404, 'NOT_FOUND', 'User not found');
+    }
+
+    const exists = user.webPushSubscriptions.some(
+      (item) => item.endpoint === payload.subscription.endpoint
+    );
+
+    if (!exists) {
+      user.webPushSubscriptions.push({
+        endpoint: payload.subscription.endpoint,
+        keys: payload.subscription.keys,
+        createdAt: new Date()
+      });
+      await user.save();
+    }
+
+    return sendSuccess(req, res, { subscribed: true });
   } catch (err) {
     return next(err);
   }

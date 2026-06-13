@@ -1,8 +1,30 @@
-import pino from 'pino';
+import pino, { type LoggerOptions } from 'pino';
 import pinoHttp from 'pino-http';
 import { env } from '../config/env';
 
-export const logger = pino({ level: env.LOG_LEVEL });
+const redact: LoggerOptions['redact'] = {
+  paths: [
+    'req.headers.authorization',
+    'req.headers.cookie',
+    'req.body.otp',
+    'req.body.password',
+    'req.body.accessToken',
+    'req.body.refreshToken',
+    'req.body.token',
+    'req.body.secret',
+    'req.body.key_secret',
+    'req.body.subscription.keys.auth',
+    'res.headers.set-cookie',
+    'JWT_ACCESS_SECRET',
+    'JWT_REFRESH_SECRET',
+    'RAZORPAY_KEY_SECRET',
+    'RAZORPAY_WEBHOOK_SECRET',
+    'SENTRY_DSN'
+  ],
+  censor: '[REDACTED]'
+};
+
+export const logger = pino({ level: env.LOG_LEVEL, redact });
 
 export const requestLogger = pinoHttp({
   logger,
@@ -12,5 +34,5 @@ export const requestLogger = pinoHttp({
     return 'info';
   },
   customSuccessMessage: (req, res) => `${req.method} ${req.url} ${res.statusCode}`,
-  redact: ['req.headers.authorization', 'req.body.otp', 'req.body.password']
+  redact
 });

@@ -7,6 +7,8 @@ import { logAudit } from '../../models/AuditLog';
 import { Batch } from '../../models/Batch';
 import { Enrollment } from '../../models/Enrollment';
 import { FeeLedger } from '../../models/FeeLedger';
+import { notifyCustomerEnrollmentApproved, notifyCustomerEnrollmentRejected } from '../../services/notifications';
+import { branchScopedValue } from '../../utils/branchScope';
 import { sendSuccess } from '../../utils/response';
 
 export const enrollmentsRouter: ExpressRouter = Router();
@@ -57,13 +59,11 @@ enrollmentsRouter.get('/', async (req, res, next) => {
     }
 
     if (req.user?.role === 'branch_admin') {
-      filter.branchId = {
-        $in: query.branchId ? [query.branchId] : req.user.branchIds
-      };
+      filter.branchId = branchScopedValue(req.user, query.branchId);
     }
 
     const enrollments = await Enrollment.find(filter)
-      .populate('childId', 'name dob gender photo')
+      .populate('studentProfileId', 'name dob gender photo')
       .populate('batchId', 'name schedule monthlyFee')
       .populate('branchId', 'name city')
       .sort({ createdAt: -1 });
@@ -101,7 +101,7 @@ enrollmentsRouter.put('/:id/approve', async (req, res, next) => {
             },
             {
               enrollmentId: enrollment._id,
-              childId: enrollment.childId,
+              studentProfileId: enrollment.studentProfileId,
               branchId: enrollment.branchId,
               month: currentMonthString(),
               amount: batch.monthlyFee,
@@ -124,6 +124,8 @@ enrollmentsRouter.put('/:id/approve', async (req, res, next) => {
           ip: req.ip,
           requestId: req.headers['x-request-id'] as string | undefined
         });
+
+        void notifyCustomerEnrollmentApproved(String(enrollment.studentProfileId));
 
         return sendSuccess(req, res, enrollment);
       } catch (err) {
@@ -159,6 +161,8 @@ enrollmentsRouter.put('/:id/reject', async (req, res, next) => {
           ip: req.ip,
           requestId: req.headers['x-request-id'] as string | undefined
         });
+
+        void notifyCustomerEnrollmentRejected(String(enrollment.studentProfileId));
 
         return sendSuccess(req, res, enrollment);
       } catch (err) {
