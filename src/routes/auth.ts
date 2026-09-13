@@ -4,9 +4,11 @@ import { Router, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
 import { otpAdapter } from '../adapters/otp';
 import { env } from '../config/env';
+import { assertDemoAccountAllowed, DEMO_ACCOUNTS, isDemoAccount } from '../config/demo';
 import { AppError } from '../middleware/errorHandler';
 import { authenticate } from '../middleware/auth';
 import { requireAuth } from '../middleware/rbac';
+import { demoReadOnly } from '../middleware/demoReadOnly';
 import { OtpSession } from '../models/OtpSession';
 import { User } from '../models/User';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
@@ -59,9 +61,24 @@ const PushSubscriptionSchema = z.object({
   })
 });
 
+authRouter.get('/demo-config', (req, res) => {
+  const enabled = env.DEMO_MODE === 'true';
+
+  return sendSuccess(req, res, {
+    enabled,
+    otpCode: enabled ? env.DEMO_OTP_CODE : undefined,
+    accounts: enabled ? DEMO_ACCOUNTS : []
+  });
+});
+
 authRouter.post('/otp-send', otpRateLimit, async (req, res, next) => {
   try {
     const { phone } = z.object({ phone: PhoneNumber }).parse(req.body);
+
+    if (!assertDemoAccountAllowed(phone)) {
+      throw new AppError(403, 'DEMO_ACCOUNTS_ONLY', 'Choose one of the demo accounts shown on this page');
+    }
+
     const result = await otpAdapter.send(phone);
 
     await OtpSession.create({
@@ -88,6 +105,10 @@ authRouter.post('/otp-verify', credentialRateLimit, async (req, res, next) => {
         txnId: z.string()
       })
       .parse(req.body);
+
+    if (!assertDemoAccountAllowed(phone)) {
+      throw new AppError(403, 'DEMO_ACCOUNTS_ONLY', 'Choose one of the demo accounts shown on this page');
+    }
 
     const session = await OtpSession.findOne({ phone, txnId, verified: false });
 
@@ -127,7 +148,8 @@ authRouter.post('/otp-verify', credentialRateLimit, async (req, res, next) => {
     const jwtPayload = {
       userId: String(user._id),
       role: user.role,
-      branchIds: user.branchIds.map(String)
+      branchIds: user.branchIds.map(String),
+      isDemo: isDemoAccount(user.phone)
     };
 
     const accessToken = signAccessToken(jwtPayload);
@@ -141,7 +163,8 @@ authRouter.post('/otp-verify', credentialRateLimit, async (req, res, next) => {
         _id: String(user._id),
         name: user.name,
         role: user.role,
-        phone: user.phone
+        phone: user.phone,
+        isDemo: jwtPayload.isDemo
       }
     });
   } catch (err) {
@@ -167,7 +190,8 @@ authRouter.post('/refresh', async (req, res, next) => {
     const newPayload = {
       userId: String(user._id),
       role: user.role,
-      branchIds: user.branchIds.map(String)
+      branchIds: user.branchIds.map(String),
+      isDemo: payload.isDemo === true
     };
 
     const accessToken = signAccessToken(newPayload);
@@ -199,13 +223,16 @@ authRouter.get('/me', authenticate, requireAuth, async (req, res, next) => {
       throw new AppError(404, 'NOT_FOUND', 'User not found');
     }
 
-    return sendSuccess(req, res, user);
+    return sendSuccess(req, res, {
+      ...user.toObject(),
+      isDemo: req.user?.isDemo === true
+    });
   } catch (err) {
     return next(err);
   }
 });
 
-authRouter.post('/push-subscribe', authenticate, requireAuth, async (req, res, next) => {
+authRouter.post('/push-subscribe', authenticate, requireAuth, demoReadOnly, async (req, res, next) => {
   try {
     const payload = PushSubscriptionSchema.parse(req.body);
     const user = await User.findById(req.user!.userId);

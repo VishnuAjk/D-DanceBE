@@ -6,6 +6,7 @@ export interface JwtPayload {
   userId: string;
   role: UserRoleType;
   branchIds: string[];
+  isDemo?: boolean;
 }
 
 export function signAccessToken(payload: JwtPayload): string {
