@@ -14,6 +14,8 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'silent']).default('info'),
   WEB_URL: z.string().default('http://localhost:3000'),
   OTP_PROVIDER: z.enum(['mock', 'msg91']).default('mock'),
+  DEMO_MODE: z.enum(['true', 'false']).default('false'),
+  DEMO_OTP_CODE: z.string().regex(/^\d{6}$/, 'DEMO_OTP_CODE must be exactly 6 digits').default('123456'),
   MSG91_AUTH_KEY: z.string().optional(),
   MSG91_TEMPLATE_ID: z.string().optional(),
   MSG91_SENDER_ID: z.string().default('DANCE'),
@@ -30,6 +32,14 @@ const EnvSchema = z.object({
   REDIS_URL: z.string().optional(),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
   COOKIE_DOMAIN: z.string().default('localhost')
+}).superRefine((value, context) => {
+  if (value.DEMO_MODE === 'true' && value.OTP_PROVIDER !== 'mock') {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['OTP_PROVIDER'],
+      message: 'OTP_PROVIDER must be mock when DEMO_MODE is enabled'
+    });
+  }
 });
 
 const result = EnvSchema.safeParse(process.env);

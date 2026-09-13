@@ -9,12 +9,12 @@ export interface OtpAdapter {
 
 class MockOtpAdapter implements OtpAdapter {
   async send(phone: string) {
-    logger.info({ phone }, '[MockOTP] OTP sent (use 123456)');
+    logger.info({ phone }, `[MockOTP] OTP sent (use ${env.DEMO_OTP_CODE})`);
     return { txnId: `mock-txn-${Date.now()}`, expiresIn: 300 };
   }
 
   async verify(_phone: string, otp: string, _txnId: string) {
-    return otp === '123456';
+    return otp === env.DEMO_OTP_CODE;
   }
 }
 

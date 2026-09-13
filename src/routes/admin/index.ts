@@ -1,6 +1,7 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import { authenticate } from '../../middleware/auth';
 import { requireRole } from '../../middleware/rbac';
+import { demoReadOnly } from '../../middleware/demoReadOnly';
 import { batchesRouter } from './batches';
 import { branchesRouter } from './branches';
 import { coursesRouter } from './courses';
@@ -15,6 +16,7 @@ import { videosRouter } from './videos';
 export const adminRouter: ExpressRouter = Router();
 
 adminRouter.use(authenticate);
+adminRouter.use(demoReadOnly);
 adminRouter.use('/branches', requireRole('super_admin', 'branch_admin'), branchesRouter);
 adminRouter.use('/courses', requireRole('super_admin', 'branch_admin'), coursesRouter);
 adminRouter.use('/levels', requireRole('super_admin', 'branch_admin'), levelsRouter);

@@ -1,6 +1,7 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import { authenticate } from '../../middleware/auth';
 import { requireRole } from '../../middleware/rbac';
+import { demoReadOnly } from '../../middleware/demoReadOnly';
 import { dashboardRouter } from './dashboard';
 import { catalogRouter } from './catalog';
 import { studentProfilesRouter } from './studentProfiles';
@@ -12,6 +13,7 @@ import { assessmentsRouter } from './assessments';
 export const studentRouter: ExpressRouter = Router();
 
 studentRouter.use(authenticate);
+studentRouter.use(demoReadOnly);
 studentRouter.use(requireRole('customer', 'parent'));
 studentRouter.use('/dashboard', dashboardRouter);
 studentRouter.use('/catalog', catalogRouter);
