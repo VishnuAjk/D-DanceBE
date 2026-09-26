@@ -2,9 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, env/dev]
   pull_request:
-    branches: [main]
+    branches: [main, env/dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
@@ -30,6 +37,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/D-DanceShared
+          ref: env/dev
           path: D-DanceShared
           token: ${{ secrets.SHARED_REPO_TOKEN || github.token }}
 

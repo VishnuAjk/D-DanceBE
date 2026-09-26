@@ -18,12 +18,12 @@ This setup corresponds to the backend portions of:
 - `FOUND-01` Monorepo Bootstrap, adapted to separate repo layout
 - `FOUND-04` Express API Skeleton, partially scaffolded
 
-## Next steps
+## Local development
 
 1. Install dependencies with `pnpm install`
 2. Copy `.env.example` to `.env`
 3. Run `pnpm dev`
-4. Continue with Sprint 2 backend auth work
+4. Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` before opening a pull request
 
 ## Local role seed
 
@@ -44,7 +44,7 @@ When `OTP_PROVIDER=mock`, the OTP is always `123456`.
 ## Public demo mode
 
 The hosted demo can expose four role-based, read-only accounts on the login
-screen. Configure the backend (for example, in Railway) with:
+screen. Configure the backend in Render with:
 
 ```env
 DEMO_MODE=true
@@ -64,8 +64,16 @@ is restricted to those accounts and authenticated demo users may only make
 read requests. Disable `DEMO_MODE` before connecting the deployment to real
 users or enabling a real OTP provider.
 
+## CI and deployment
+
+Pull requests to `env/dev` and `main`, plus direct pushes to those branches,
+run typechecking, linting, unit tests, and a production build. The production
+backend is connected to `env/dev` through Render's Git integration, so merging
+to `env/dev` triggers the deployment. Deployment credentials are not stored in
+GitHub Actions and there is no separate repository deployment workflow.
+
 ## Workspace docs
 
 Use the workspace agent entry document for project-wide workflow:
 
-- [ENTRYPOINT.md](/home/vishnu/Projects/Dance%20Web%20App/docs/agent-dev/ENTRYPOINT.md)
+- `../docs/agent-dev/ENTRYPOINT.md` in the local workspace
