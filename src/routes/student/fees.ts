@@ -27,6 +27,34 @@ function currentMonthString() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+async function findOwnedStudentProfile(studentProfileId: string, customerId: string) {
+  const studentProfile = await StudentProfile.findOne({
+    _id: studentProfileId,
+    customerId,
+    isActive: true
+  }).select('_id');
+
+  if (!studentProfile) {
+    throw new AppError(404, 'NOT_FOUND', 'Student profile not found');
+  }
+
+  return studentProfile;
+}
+
+async function findOwnedStudentProfileIds(customerId: string, selectedStudentProfileId?: string) {
+  if (selectedStudentProfileId) {
+    const studentProfile = await findOwnedStudentProfile(selectedStudentProfileId, customerId);
+    return [studentProfile._id];
+  }
+
+  const studentProfiles = await StudentProfile.find({
+    customerId,
+    isActive: true
+  }).select('_id');
+
+  return studentProfiles.map((studentProfile) => studentProfile._id);
+}
+
 async function findOwnedEnrollment(enrollmentId: string, customerId: string) {
   const studentProfiles = await StudentProfile.find({
     customerId,
@@ -60,15 +88,14 @@ feesRouter.get('/', async (req, res, next) => {
       })
       .parse(req.query);
 
-    const studentProfiles = await StudentProfile.find({
-      customerId: req.user!.userId,
-      isActive: true
-    }).select('_id');
-
-    const studentProfileIds = studentProfiles.map((studentProfile) => String(studentProfile._id));
     const selectedStudentProfileId = query.studentProfileId ?? query.childId;
+    const studentProfileIds = await findOwnedStudentProfileIds(
+      req.user!.userId,
+      selectedStudentProfileId
+    );
+
     const filter: Record<string, unknown> = {
-      studentProfileId: { $in: selectedStudentProfileId ? [selectedStudentProfileId] : studentProfileIds }
+      studentProfileId: { $in: studentProfileIds }
     };
 
     if (query.month) {
