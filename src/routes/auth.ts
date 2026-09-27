@@ -143,6 +143,10 @@ authRouter.post('/otp-verify', credentialRateLimit, async (req, res, next) => {
       });
     }
 
+    if (user.status !== 'active') {
+      throw new AppError(401, 'ACCOUNT_INACTIVE', 'Account is inactive or unavailable');
+    }
+
     await User.updateOne({ _id: user._id }, { lastLoginAt: new Date() });
 
     const jwtPayload = {
@@ -180,18 +184,24 @@ authRouter.post('/refresh', async (req, res, next) => {
       throw new AppError(401, 'UNAUTHORIZED', 'Refresh token missing');
     }
 
-    const payload = verifyRefreshToken(token);
-    const user = await User.findById(payload.userId).select('_id name role branchIds status');
+    let payload: ReturnType<typeof verifyRefreshToken>;
+    try {
+      payload = verifyRefreshToken(token);
+    } catch {
+      throw new AppError(401, 'TOKEN_EXPIRED', 'Refresh token is invalid or expired');
+    }
+
+    const user = await User.findById(payload.userId).select('_id phone name role branchIds status');
 
     if (!user || user.status !== 'active') {
-      throw new AppError(401, 'UNAUTHORIZED', 'User not found or inactive');
+      throw new AppError(401, 'ACCOUNT_INACTIVE', 'Account is inactive or unavailable');
     }
 
     const newPayload = {
       userId: String(user._id),
       role: user.role,
       branchIds: user.branchIds.map(String),
-      isDemo: payload.isDemo === true
+      isDemo: isDemoAccount(user.phone)
     };
 
     const accessToken = signAccessToken(newPayload);
@@ -204,7 +214,7 @@ authRouter.post('/refresh', async (req, res, next) => {
   }
 });
 
-authRouter.post('/logout', authenticate, requireAuth, (req, res) => {
+authRouter.post('/logout', (req, res) => {
   res.clearCookie('refreshToken', {
     path: '/',
     domain: env.COOKIE_DOMAIN

@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import type { NextFunction, Request, Response } from 'express';
+import { isDemoAccount } from '../config/demo';
+import { User } from '../models/User';
 import { verifyAccessToken, type JwtPayload } from '../utils/jwt';
 
 declare global {
@@ -10,35 +12,64 @@ declare global {
   }
 }
 
-export function authenticate(req: Request, res: Response, next: NextFunction) {
+function sendAuthenticationError(
+  req: Request,
+  res: Response,
+  code: 'UNAUTHORIZED' | 'TOKEN_EXPIRED' | 'ACCOUNT_INACTIVE',
+  message: string
+) {
+  return res.status(401).json({
+    success: false,
+    data: null,
+    error: { code, message },
+    meta: {
+      requestId: req.headers['x-request-id'],
+      timestamp: new Date().toISOString()
+    }
+  });
+}
+
+export async function authenticate(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
 
   if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({
-      success: false,
-      data: null,
-      error: { code: 'UNAUTHORIZED', message: 'Access token required' },
-      meta: {
-        requestId: req.headers['x-request-id'],
-        timestamp: new Date().toISOString()
-      }
-    });
+    return sendAuthenticationError(req, res, 'UNAUTHORIZED', 'Access token required');
+  }
+
+  let payload: JwtPayload;
+  try {
+    const token = header.slice(7);
+    payload = verifyAccessToken(token);
+  } catch {
+    return sendAuthenticationError(
+      req,
+      res,
+      'TOKEN_EXPIRED',
+      'Access token is invalid or expired'
+    );
   }
 
   try {
-    const token = header.slice(7);
-    const payload = verifyAccessToken(token);
-    req.user = { ...payload, _id: payload.userId };
+    const user = await User.findById(payload.userId).select('_id phone role branchIds status');
+
+    if (!user || user.status !== 'active') {
+      return sendAuthenticationError(
+        req,
+        res,
+        'ACCOUNT_INACTIVE',
+        'Account is inactive or unavailable'
+      );
+    }
+
+    req.user = {
+      userId: String(user._id),
+      _id: String(user._id),
+      role: user.role,
+      branchIds: user.branchIds.map(String),
+      isDemo: isDemoAccount(user.phone)
+    };
     return next();
-  } catch {
-    return res.status(401).json({
-      success: false,
-      data: null,
-      error: { code: 'TOKEN_EXPIRED', message: 'Access token is invalid or expired' },
-      meta: {
-        requestId: req.headers['x-request-id'],
-        timestamp: new Date().toISOString()
-      }
-    });
+  } catch (err) {
+    return next(err);
   }
 }
