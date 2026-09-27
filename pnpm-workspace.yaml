@@ -8,3 +8,6 @@ allowBuilds:
 onlyBuiltDependencies:
   - esbuild
   - mongodb-memory-server
+
+overrides:
+  brace-expansion: 5.0.9
